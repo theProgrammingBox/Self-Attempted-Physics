@@ -105,7 +105,7 @@ private:
 					const vf2d dVel = balls[i].GetVelocity() - balls[j].GetVelocity();
 					const float a = dVel.mag2();
 					const float b = dPos.dot(dVel);
-					const float c = distanceSquared - thicknessSquared - 0.001f;
+					const float c = distanceSquared - thicknessSquared - 0.1f;
 					float d = (-sqrt(b * b - a * c) - b) / a;
 					if (d < dt)
 					{
@@ -153,7 +153,7 @@ public:
 		mouse = vf2d(GetMouseX(), GetMouseY());
 		balls.push_back(Ball(
 			vf2d(100, 500),
-			vf2d(10.0f, 0.0f),
+			vf2d(100.0f, 0.0f),
 			0.0f,
 			0.0f,
 			10.0f,
@@ -166,13 +166,13 @@ public:
 			vf2d(0.0f, 0.0f),
 			0.0f,
 			0.0f,
-			100.0f,
-			0.01f,
-			1.0f,
+			150.0f,
+			0.1f,
+			0.8f,
 			0.0f,
 			olc::RED));
 		balls.push_back(Ball(
-			vf2d(500, 500),
+			vf2d(900, 500),
 			vf2d(0.0f, 0.0f),
 			0.0f,
 			0.0f,
@@ -208,8 +208,10 @@ public:
 				{
 					Update(dt);
 					totalDT += dt;
+					cout << "dt: " << dt << endl;
 				}
 			} while (hasCollision);
+			cout << "totalDT: " << totalDT << endl;
 			if (ball1 != nullptr && ball2 != nullptr)
 			{
 				float elasticity = (ball1->GetElasticity() + ball2->GetElasticity()) / 2.0f + 1.0f;
