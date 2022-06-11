@@ -129,12 +129,13 @@
   <ItemGroup>
     <ClInclude Include="Ball.h" />
     <ClInclude Include="Header.h" />
+    <ClInclude Include="Line.h" />
     <ClInclude Include="olcPixelGameEngine.h" />
     <ClInclude Include="Randoms.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Ball.cpp" />
-    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="Line.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

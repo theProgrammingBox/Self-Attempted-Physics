@@ -5,4 +5,6 @@
 using namespace std;
 using namespace olc;
 
-class Ball;
+const float PI = 3.1415927;
+
+class Line;

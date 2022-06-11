@@ -6,248 +6,121 @@ class Ball
 private:
 	vf2d position;
 	vf2d velocity;
-	vf2d acceleration;
-	vf2d force;
 
-	double angle;
-	double angularVelocity;
-	double angularAcceleration;
-	double angularForce;
+	float angle;
+	float angularVelocity;
 
-	vf2d savedPosition;
-	vf2d savedVelocity;
-	vf2d accumulatedvelocity;
+	float thickness;
 
-	double savedAngle;
-	double savedAngularVelocity;
-	double accumulatedAngularVelocity;
-
-	double radius;
-	double density;
-	double elasticity;
-	double friction;
+	float density;
+	float elasticity;
+	float friction;
 	Pixel color;
 
-	double inverseMass;
-	double inverseInertia;
+	float inverseMass;
+	float inverseInertia;
+
+	vf2d normal;
 
 public:
-	Ball();
+	Ball() :
+		position(0.0f, 0.0f),
+		velocity(0.0f, 0.0f),
+		angle(0.0f),
+		angularVelocity(0.0f),
+		thickness(10.0f),
+		density(1.0f),
+		elasticity(0.8f),
+		friction(0.8f),
+		color(WHITE),
+		inverseMass(1.0f / (density * thickness * thickness * PI)),
+		inverseInertia(2.0f * inverseMass / (thickness * thickness)),
+		normal(cos(angle), sin(angle)) {};
+
+	Ball(
+		vf2d position,
+		vf2d velocity,
+		float angle,
+		float angularVelocity,
+		float thickness,
+		float density,
+		float elasticity,
+		float friction,
+		Pixel color) :
+		position(position),
+		velocity(velocity),
+		angle(angle),
+		angularVelocity(angularVelocity),
+		thickness(thickness),
+		density(density),
+		elasticity(elasticity),
+		friction(friction),
+		color(color),
+		inverseMass(1.0f / (density * thickness * thickness * PI)),
+		inverseInertia(2.0f * inverseMass / (thickness * thickness)),
+		normal(cos(angle), sin(angle)) {};
+
+	vf2d GetPosition() const { return position; };
+	vf2d GetVelocity() const { return velocity; };
+	float GetAngle() const { return angle; };
+	float GetAngularVelocity() const { return angularVelocity; };
+	float GetThickness() const { return thickness; };
+	float GetDensity() const { return density; };
+	float GetElasticity() const { return elasticity; };
+	float GetFriction() const { return friction; };
+	Pixel GetColor() const { return color; };
+	float GetInverseMass() const { return inverseMass; };
+	float GetInverseInertia() const { return inverseInertia; };
+	vf2d GetNormal() const { return normal; };
 
 	void SetPosition(vf2d positon);
 	void SetVelocity(vf2d velocity);
-	void SetAngle(double angle);
-	void SetAngularVelocity(double angularVelocity);
-	void SetRadius(double radius);
-	void SetDensity(double density);
-	void SetElasticity(double elasticity);
-	void SetFriction(double friction);
+	void SetAngle(float angle);
+	void SetAngularVelocity(float angularVelocity);
+	void SetThickness(float thickness);
+	void SetDensity(float density);
+	void SetElasticity(float elasticity);
+	void SetFriction(float friction);
 	void SetColor(Pixel color);
 
 	void ApplyForce(vf2d force);
-	void ApplyAngularForce(double angularForce);
-	void ApplyAcceleration(vf2d acceleration);
-	void ApplyAngularAcceleration(double angularAcceleration);
-	void Update(double dt);
-	void SaveState();
-	void RestoreState();
-
-	vf2d GetPosition() const;
-	vf2d GetVelocity() const;
-	double GetAngle() const;
-	double GetAngularVelocity() const;
-	double GetRadius() const;
-	double GetFriction() const;
-	double GetElasticity() const;
-	Pixel GetColor() const;
-	double GetInverseMass() const;
-	double GetInverseInertia() const;
-	double GetEnergy() const;
+	void ApplyAngularForce(float angularForce);
+	void ApplyAcceleration(vf2d acceleration, float dt);
+	void ApplyAngularAcceleration(float angularAcceleration, float dt);
+	void Update(float dt);
 };
 
-Ball::Ball()
-{
-	position = vf2d(0, 0);
-	velocity = vf2d(0, 0);
-	acceleration = vf2d(0, 0);
-	force = vf2d(0, 0);
-	savedPosition = vf2d(0, 0);
-	savedVelocity = vf2d(0, 0);
-	accumulatedvelocity = vf2d(0, 0);
-
-	angle = 0;
-	angularVelocity = 0;
-	angularAcceleration = 0;
-	angularForce = 0;
-	savedAngle = 0;
-	savedAngularVelocity = 0;
-	accumulatedAngularVelocity = 0;
-
-	radius = 10;
-	density = 1;
-	elasticity = 1;
-	friction = 1;
-	color = WHITE;
-	inverseMass = 0.00318309886184f;
-	inverseInertia = 0.000127323954474f;
-}
-
-void Ball::SetPosition(vf2d positon)
-{
-	position = positon;
-}
-
-void Ball::SetVelocity(vf2d velocity)
-{
-	this->velocity = velocity;
-}
-
-void Ball::SetAngle(double angle)
+void Ball::SetPosition(vf2d positon) { this->position = positon; }
+void Ball::SetVelocity(vf2d velocity) { this->velocity = velocity; }
+void Ball::SetAngle(float angle)
 {
 	this->angle = angle;
+	normal = vf2d(cos(angle), sin(angle));
 }
-
-void Ball::SetAngularVelocity(double angularVelocity)
+void Ball::SetAngularVelocity(float angularVelocity) { this->angularVelocity = angularVelocity; }
+void Ball::SetThickness(float thickness)
 {
-	this->angularVelocity = angularVelocity;
+	this->thickness = thickness;
+	inverseMass = 1.0f / (density * thickness * thickness * PI);
+	inverseInertia = 2.0f * inverseMass / (thickness * thickness);
 }
-
-void Ball::SetRadius(double radius) // > 0
-{
-	this->radius = radius;
-	inverseMass = 1.0f / (3.14159265359 * radius * radius * density);
-	inverseInertia = 1.0f / (0.785398163397 * radius * radius * radius * radius * density);
-}
-
-void Ball::SetDensity(double density) // > 0
+void Ball::SetDensity(float density)
 {
 	this->density = density;
-	inverseMass = 1.0f / (3.14159265359 * radius * radius * density);
-	inverseInertia = 1.0f / (0.785398163397 * radius * radius * radius * radius * density);
+	inverseMass = 1.0f / (density * thickness * thickness * PI);
+	inverseInertia = 2.0f * inverseMass / (thickness * thickness);
 }
+void Ball::SetElasticity(float elasticity) { this->elasticity = elasticity; }
+void Ball::SetFriction(float friction) { this->friction = friction; }
+void Ball::SetColor(Pixel color) { this->color = color; }
 
-void Ball::SetElasticity(double elasticity) // 0 - 1
+void Ball::ApplyForce(vf2d force) { velocity += force * inverseMass; }
+void Ball::ApplyAngularForce(float angularForce) { angularVelocity += angularForce * inverseInertia; }
+void Ball::ApplyAcceleration(vf2d acceleration, float dt) { velocity += acceleration * dt; }
+void Ball::ApplyAngularAcceleration(float angularAcceleration, float dt) { angularVelocity += angularAcceleration * dt; }
+void Ball::Update(float dt)
 {
-	this->elasticity = elasticity;
-}
-
-void Ball::SetFriction(double friction) // 0 - 1
-{
-	this->friction = friction;
-}
-
-void Ball::SetColor(Pixel color)
-{
-	this->color = color;
-}
-
-void Ball::ApplyForce(vf2d force)
-{
-	//this->force += force;
-	velocity += force * inverseMass;
-}
-
-void Ball::ApplyAngularForce(double angularForce)
-{
-	//this->angularForce += angularForce;
-	angularVelocity += angularForce * inverseInertia;
-}
-
-void Ball::ApplyAcceleration(vf2d acceleration)
-{
-	this->acceleration += acceleration;
-}
-
-void Ball::ApplyAngularAcceleration(double angularAcceleration)
-{
-	this->angularAcceleration += angularAcceleration;
-}
-
-void Ball::Update(double dt)
-{
-	velocity += acceleration * dt;
 	position += velocity * dt;
-	acceleration = vf2d(0, 0);
-	force = vf2d(0, 0);
-
-	angularVelocity += angularAcceleration * dt;
 	angle += angularVelocity * dt;
-	angle = angle > 6.28318530718 ? angle - 6.28318530718 : (angle < 0 ? angle + 6.28318530718 : angle);
-	angularAcceleration = 0;
-	angularForce = 0;
-}
-
-void Ball::SaveState()
-{
-	savedPosition = position;
-	savedVelocity = velocity;
-	accumulatedvelocity = vf2d(0, 0);
-	savedAngle = angle;
-	savedAngularVelocity = angularVelocity;
-	accumulatedAngularVelocity = 0;
-}
-
-void Ball::RestoreState()
-{
-	velocity = accumulatedvelocity / 6.0f;
-	position = savedPosition + velocity;
-	angularVelocity = accumulatedAngularVelocity / 6.0f;
-	angle = savedAngle + angularVelocity;
-}
-
-vf2d Ball::GetPosition() const
-{
-	return position;
-}
-
-vf2d Ball::GetVelocity() const
-{
-	return velocity;
-}
-
-double Ball::GetAngle() const
-{
-	return angle;
-}
-
-double Ball::GetAngularVelocity() const
-{
-	return angularVelocity;
-}
-
-double Ball::GetRadius() const
-{
-	return radius;
-}
-
-double Ball::GetFriction() const
-{
-	return friction;
-}
-
-double Ball::GetElasticity() const
-{
-	return elasticity;
-}
-
-Pixel Ball::GetColor() const
-{
-	return color;
-}
-
-double Ball::GetInverseMass() const
-{
-	return inverseMass;
-}
-
-double Ball::GetInverseInertia() const
-{
-	return inverseInertia;
-}
-
-double Ball::GetEnergy() const
-{
-	return
-		(0.5f / inverseMass * velocity.mag2()) +
-		(0.5f / inverseInertia * angularVelocity * angularVelocity);
+	normal = vf2d(cos(angle), sin(angle));
 }
