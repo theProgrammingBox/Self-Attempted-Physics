@@ -85,7 +85,6 @@ private:
 	bool HasCollision(float& dt, Ball*& ball1, Ball*& ball2)
 	{
 		bool hasCollision = false;
-		dt = INFINITY;
 		for (int i = 0; i < balls.size(); i++)
 		{
 			for (int j = i + 1; j < balls.size(); j++)
@@ -158,17 +157,7 @@ public:
 			0.0f,
 			0.0f,
 			10.0f,
-			100000.0f,
-			1.0f,
-			0.0f,
-			olc::RED));
-		balls.push_back(Ball(
-			vf2d(200, 500),
-			vf2d(0.0f, 0.0f),
-			0.0f,
-			0.0f,
-			10.0f,
-			1.0f,
+			1000000.0f,
 			1.0f,
 			0.0f,
 			olc::RED));
@@ -177,8 +166,18 @@ public:
 			vf2d(0.0f, 0.0f),
 			0.0f,
 			0.0f,
+			100.0f,
+			0.01f,
+			1.0f,
+			0.0f,
+			olc::RED));
+		balls.push_back(Ball(
+			vf2d(500, 500),
+			vf2d(0.0f, 0.0f),
+			0.0f,
+			0.0f,
 			10.0f,
-			100000.0f,
+			1000000.0f,
 			1.0f,
 			0.0f,
 			olc::RED));
@@ -201,12 +200,16 @@ public:
 			ball2 = nullptr;
 			Update(FPS - totalDT);
 			totalDT = FPS;
-			hasCollision = HasCollision(dt, ball1, ball2);
-			while (hasCollision)
+			do
 			{
-				Update(dt);
+				dt = INFINITY;
 				hasCollision = HasCollision(dt, ball1, ball2);
-			}
+				if (hasCollision)
+				{
+					Update(dt);
+					totalDT += dt;
+				}
+			} while (hasCollision);
 			if (ball1 != nullptr && ball2 != nullptr)
 			{
 				float elasticity = (ball1->GetElasticity() + ball2->GetElasticity()) / 2.0f + 1.0f;
