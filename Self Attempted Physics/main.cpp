@@ -106,7 +106,7 @@ private:
 				distanceSquared = dPos.mag2();
 				totalThickness = balls[i].GetThickness() + balls[j].GetThickness();
 				thicknessSquared = totalThickness * totalThickness;
-				if (distanceSquared + 1.0f < thicknessSquared)
+				if (distanceSquared + 0.0f < thicknessSquared)
 				{
 					collisionDetails collision;
 					collision.ball1 = &balls[i];
@@ -221,7 +221,6 @@ private:
 					}
 				}
 				cout << dtOffset << endl;
-				//SaveState();
 				Update(dtOffset);
 				totalDt += dtOffset;
 				if (dtOffset == 0.0f)
@@ -277,9 +276,9 @@ public:
 	{
 		screen = vf2d(ScreenWidth(), ScreenHeight());
 		mouse = vf2d(GetMouseX(), GetMouseY());
-		balls.push_back(Ball(vf2d(300, 500), vf2d(20.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000.0f, 1.0f, 0.0f, WHITE));
-		balls.push_back(Ball(vf2d(400, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.8f, 0.0f, RED));
-		balls.push_back(Ball(vf2d(500, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000.0f, 1.0f, 0.0f, GREEN));
+		balls.push_back(Ball(vf2d(300, 500), vf2d(20.0f, 0.0f), 0.0f, 0.0f, 10.0f, 10000.0f, 1.0f, 0.0f, WHITE));
+		balls.push_back(Ball(vf2d(400, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 1.0f, 0.0f, RED));
+		balls.push_back(Ball(vf2d(500, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 10000.0f, 1.0f, 0.0f, GREEN));
 
 		return true;
 	}
