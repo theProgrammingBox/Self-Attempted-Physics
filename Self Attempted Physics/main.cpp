@@ -16,7 +16,6 @@ private:
 		vf2d dPos;
 		vf2d dVel;
 		float distanceSquared;
-		float totalThickness;
 	};
 
 	Pixel mapToRainbow(float d) { // 0 - 1
@@ -155,18 +154,17 @@ private:
 						{
 							collisionNormal = dPos / distance;
 						}
-						impulse = (distance - totalThickness - 0.1f) / (balls[i].GetInverseMass() + balls[j].GetInverseMass());
+						impulse = (distance - totalThickness - 0.001f) / (balls[i].GetInverseMass() + balls[j].GetInverseMass());
 						impulseVector = collisionNormal * impulse;
 						balls[i].SetPosition(balls[i].GetPosition() - impulseVector * balls[i].GetInverseMass());
 						balls[j].SetPosition(balls[j].GetPosition() + impulseVector * balls[j].GetInverseMass());
 						/*Theres a bug where an object sandwitched between two objects of enourmous mass will not be able
-						to move either one resulting in infinite loop because it jitters between the two objects*/
+						to move either one resulting in infinite loop because it jitters between the two objects without
+						moving them*/
 					}
 				}
-				//cout << "nok\n";
 				if (counter == balls.size())
 				{
-					//cout << "ok\n";
 					return;
 				}
 			}
@@ -178,7 +176,7 @@ private:
 		vector<collisionDetails> collisions;
 		vector<collisionDetails> prevCollisions;
 		int i, j;
-		float totalDt = 0.0f;
+		float totalDt;
 		float remainingDt;
 		float dtOffset;
 		float a, b, c;
@@ -187,13 +185,14 @@ private:
 		vf2d dPos;
 		float distanceSquared;
 		float totalThickness;
-		float distance;
+		vf2d dVel;
 		float elasticity;
 		vf2d collisionNormal;
-		vf2d dVel;
 		float normalVelocity;
 		float impulse;
 		vf2d impulseVector;
+
+		totalDt = 0.0f;
 		while (totalDt < dt)
 		{
 			remainingDt = dt - totalDt;
@@ -216,7 +215,7 @@ private:
 							dVel = balls[i].GetVelocity() - balls[j].GetVelocity();
 							a = dVel.mag2();
 							b = dVel.dot(dPos);
-							c = distanceSquared - (totalThickness + 0.1f) * (totalThickness + 0.1f);
+							c = distanceSquared - (totalThickness + 0.001f) * (totalThickness + 0.001f);
 							offset = -(b + sqrt(b * b - a * c)) / a;
 							if (offset < dtOffset)
 							{
@@ -229,7 +228,6 @@ private:
 							collision.dPos = dPos;
 							collision.dVel = dVel;
 							collision.distanceSquared = distanceSquared;
-							collision.totalThickness = totalThickness;
 							collisions.push_back(collision);
 						}
 					}
@@ -289,9 +287,9 @@ public:
 	{
 		screen = vf2d(ScreenWidth(), ScreenHeight());
 		mouse = vf2d(GetMouseX(), GetMouseY());
-		balls.push_back(Ball(vf2d(300, 500), vf2d(20.0f, 0.0f), 0.0f, 0.0f, 10.0f, 10000.0f, 1.0f, 0.0f, WHITE));
-		balls.push_back(Ball(vf2d(400, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 1.0f, 0.0f, RED));
-		balls.push_back(Ball(vf2d(500, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 10000.0f, 1.0f, 0.0f, GREEN));
+		balls.push_back(Ball(vf2d(300, 500), vf2d(20.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
+		balls.push_back(Ball(vf2d(400, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.0f, 0.0f, RED));
+		balls.push_back(Ball(vf2d(500, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, GREEN));
 
 		return true;
 	}
@@ -301,7 +299,6 @@ public:
 		Render();
 		Controls();
 		SeperateAllBalls();
-		//Update(FPS);
 		StimulateTimestep(FPS);
 
 		return true;
