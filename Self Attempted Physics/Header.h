@@ -1,6 +1,7 @@
 #pragma once
 #include "olcPixelGameEngine.h"
 #include "Randoms.h"
+#include <vector>
 
 using namespace std;
 using namespace olc;

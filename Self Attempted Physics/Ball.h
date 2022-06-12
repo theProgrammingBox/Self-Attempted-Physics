@@ -22,6 +22,12 @@ private:
 
 	vf2d normal;
 
+	vf2d savedPosition;
+	vf2d savedVelocity;
+
+	float savedAngle;
+	float savedAngularVelocity;
+
 public:
 	Ball() :
 		position(0.0f, 0.0f),
@@ -35,7 +41,11 @@ public:
 		color(WHITE),
 		inverseMass(1.0f / (density * thickness * thickness * PI)),
 		inverseInertia(2.0f * inverseMass / (thickness * thickness)),
-		normal(cos(angle), sin(angle)) {};
+		normal(cos(angle), sin(angle)),
+		savedPosition(0.0f, 0.0f),
+		savedVelocity(0.0f, 0.0f),
+		savedAngle(0.0f),
+		savedAngularVelocity(0.0f) {};
 
 	Ball(
 		vf2d position,
@@ -58,7 +68,11 @@ public:
 		color(color),
 		inverseMass(1.0f / (density * thickness * thickness * PI)),
 		inverseInertia(2.0f * inverseMass / (thickness * thickness)),
-		normal(cos(angle), sin(angle)) {};
+		normal(cos(angle), sin(angle)),
+		savedPosition(position),
+		savedVelocity(velocity),
+		savedAngle(angle),
+		savedAngularVelocity(angularVelocity) {};
 
 	vf2d GetPosition() const { return position; };
 	vf2d GetVelocity() const { return velocity; };
@@ -72,6 +86,7 @@ public:
 	float GetInverseMass() const { return inverseMass; };
 	float GetInverseInertia() const { return inverseInertia; };
 	vf2d GetNormal() const { return normal; };
+	bool SameState() const { return (position == savedPosition && velocity == savedVelocity && angle == savedAngle && angularVelocity == savedAngularVelocity); };
 
 	void SetPosition(vf2d positon);
 	void SetVelocity(vf2d velocity);
@@ -88,6 +103,8 @@ public:
 	void ApplyAcceleration(vf2d acceleration, float dt);
 	void ApplyAngularAcceleration(float angularAcceleration, float dt);
 	void Update(float dt);
+	void SaveState();
+	void RestoreState();
 };
 
 void Ball::SetPosition(vf2d positon) { this->position = positon; }
@@ -123,4 +140,18 @@ void Ball::Update(float dt)
 	position += velocity * dt;
 	angle += angularVelocity * dt;
 	normal = vf2d(cos(angle), sin(angle));
+}
+void Ball::SaveState()
+{
+	savedPosition = position;
+	savedVelocity = velocity;
+	savedAngle = angle;
+	savedAngularVelocity = angularVelocity;
+}
+void Ball::RestoreState()
+{
+	position = savedPosition;
+	velocity = savedVelocity;
+	angle = savedAngle;
+	angularVelocity = savedAngularVelocity;
 }
