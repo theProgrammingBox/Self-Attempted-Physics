@@ -2,6 +2,7 @@
 #include "olcPixelGameEngine.h"
 #include "Randoms.h"
 #include <vector>
+#include <iomanip>
 
 using namespace std;
 using namespace olc;

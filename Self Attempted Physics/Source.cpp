@@ -9,14 +9,6 @@ private:
 	vector<Ball> balls;
 	const float FPS = 1.0 / 60.0;
 	Ball* selectedBall = nullptr;
-	struct collisionDetails
-	{
-		Ball* ball1;
-		Ball* ball2;
-		vf2d dPos;
-		vf2d dVel;
-		float distanceSquared;
-	};
 
 	Pixel mapToRainbow(float d) { // 0 - 1
 		d *= 6.0;
@@ -79,10 +71,10 @@ private:
 		{
 			if (selectedBall != NULL)
 			{
-				//set pos to mouse
 				selectedBall->SetPosition(mouse);
 				selectedBall->SetVelocity(vf2d(0, 0));
 				//selectedBall->SetVelocity((mouse - selectedBall->GetPosition()) / FPS);
+				SeperateAllBalls();
 			}
 		}
 		if (GetMouse(0).bReleased)
@@ -112,6 +104,7 @@ private:
 			Ball ball;
 			ball.SetPosition(mouse);
 			balls.push_back(ball);
+			SeperateAllBalls();
 		}
 		if (GetKey(olc::Key::R).bPressed)
 		{
@@ -156,7 +149,7 @@ private:
 						{
 							collisionNormal = dPos / distance;
 						}
-						impulse = (distance - totalThickness - 0.1f) / (balls[i].GetInverseMass() + balls[j].GetInverseMass());
+						impulse = (distance - totalThickness - 0.001f) / (balls[i].GetInverseMass() + balls[j].GetInverseMass());
 						impulseVector = collisionNormal * impulse;
 						balls[i].SetPosition(balls[i].GetPosition() - impulseVector * balls[i].GetInverseMass());
 						balls[j].SetPosition(balls[j].GetPosition() + impulseVector * balls[j].GetInverseMass());
@@ -195,70 +188,64 @@ private:
 		vf2d impulseVector;
 
 		totalDt = 0.0f;
-		/*while (totalDt < dt)
-		{*/
-		remainingDt = dt - totalDt;
-		Update(remainingDt);
-		totalDt += remainingDt;
-		prevCollisions.clear();
-		/*do
-		{*/
-		dtOffset = 0.0f;
-		prevCollisions = collisions;
-		collisions.clear();
-		for (i = 0; i < balls.size(); i++)
+		while (totalDt < dt)
 		{
-			for (j = i + 1; j < balls.size(); j++)
+			remainingDt = dt - totalDt;
+			Update(remainingDt);
+			totalDt += remainingDt;
+			prevCollisions.clear();
+			do
 			{
-				dPos = balls[i].GetPosition() - balls[j].GetPosition();
-				distanceSquared = dPos.mag2();
-				totalThickness = balls[i].GetThickness() + balls[j].GetThickness();
-				if (distanceSquared < totalThickness * totalThickness)
+				dtOffset = 0.0f;
+				collisions.clear();
+				for (i = 0; i < balls.size(); i++)
 				{
-					dVel = balls[i].GetVelocity() - balls[j].GetVelocity();
-					a = dVel.mag2();
-					b = dVel.dot(dPos);
-					c = distanceSquared - (totalThickness + 1.1f) * (totalThickness + 1.1f);
-					offset = -(b + sqrt(b * b - a * c)) / a;
-					if (offset < dtOffset)
+					for (j = i + 1; j < balls.size(); j++)
 					{
-						dtOffset = offset < -totalDt ? -totalDt : offset;
-						//dtOffset = offset;
+						dPos = balls[i].GetPosition() - balls[j].GetPosition();
+						distanceSquared = dPos.mag2();
+						totalThickness = balls[i].GetThickness() + balls[j].GetThickness();
+						if (distanceSquared < totalThickness * totalThickness)
+						{
+							dVel = balls[i].GetVelocity() - balls[j].GetVelocity();
+							a = dVel.mag2();
+							b = dVel.dot(dPos);
+							c = distanceSquared - (totalThickness + 0.001f) * (totalThickness + 0.001f);
+							offset = -(b + sqrt(b * b - a * c)) / a;
+							if (offset < dtOffset)
+							{
+								dtOffset = offset < -totalDt ? -totalDt : offset;
+								//dtOffset = offset;
+							}
+							collisionDetails collision;
+							collision.ball1 = &balls[i];
+							collision.ball2 = &balls[j];
+							collision.dPos = dPos;
+							collision.dVel = dVel;
+							collision.distanceSquared = distanceSquared;
+							collisions.push_back(collision);
+						}
 					}
-					/*cout << "Distance from ball " << i << " to " << j << " is " << sqrt(distanceSquared) << endl;
-					cout << "It should be " << totalThickness << endl;
-					cout << "Therefore the offset is " << offset << endl;*/
-					collisionDetails collision;
-					collision.ball1 = &balls[i];
-					collision.ball2 = &balls[j];
-					collision.dPos = dPos;
-					collision.dVel = dVel;
-					collision.distanceSquared = distanceSquared;
-					collisions.push_back(collision);
 				}
-			}
+				cout << dtOffset << endl;
+				Update(dtOffset);
+				totalDt += dtOffset;
+				if (dtOffset == 0.0f)
+				{
+					for (collisionDetails& collision : prevCollisions)
+					{
+						elasticity = (collision.ball1->GetElasticity() + collision.ball2->GetElasticity()) * 0.5f + 1.0f;
+						collisionNormal = collision.dPos / sqrt(collision.distanceSquared);
+						normalVelocity = collision.dVel.dot(collisionNormal);
+						impulse = normalVelocity / (collision.ball1->GetInverseMass() + collision.ball2->GetInverseMass());
+						impulseVector = collisionNormal * impulse * elasticity;
+						collision.ball1->ApplyForce(-impulseVector);
+						collision.ball2->ApplyForce(impulseVector);
+					}
+				}
+				prevCollisions = collisions;
+			} while (dtOffset != 0.0f);
 		}
-		//cout << dtOffset << endl;
-		/*if (dtOffset != 0.0f)
-		{*/
-		Update(dtOffset);
-		totalDt += dtOffset;
-		//}
-	/*} while (dtOffset != 0.0f);*/
-		for (collisionDetails& collision : collisions)
-		{
-			elasticity = (collision.ball1->GetElasticity() + collision.ball2->GetElasticity()) * 0.5f + 1.0f;
-			collisionNormal = collision.dPos / sqrt(collision.distanceSquared);
-			normalVelocity = collision.dVel.dot(collisionNormal);
-			impulse = normalVelocity / (collision.ball1->GetInverseMass() + collision.ball2->GetInverseMass());
-			impulseVector = collisionNormal * impulse * elasticity;
-			collision.ball1->ApplyForce(-impulseVector);
-			collision.ball2->ApplyForce(impulseVector);
-		}
-		//cout << "Ball 1 velocity is " << balls[0].GetVelocity().x << " " << balls[0].GetVelocity().y << endl;
-		/*cout << "Ball 2 velocity is " << balls[1].GetVelocity().x << " " << balls[1].GetVelocity().y << endl;*/
-		//cout << "Ball 3 velocity is " << balls[2].GetVelocity().x << " " << balls[2].GetVelocity().y << endl;
-	//}
 	}
 
 	void Render()
@@ -295,9 +282,9 @@ public:
 	{
 		screen = vf2d(ScreenWidth(), ScreenHeight());
 		mouse = vf2d(GetMouseX(), GetMouseY());
-		/*balls.push_back(Ball(vf2d(400, 500), vf2d(20.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000.0f, 0.0f, 0.0f, WHITE));
-		balls.push_back(Ball(vf2d(450, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.0f, 0.0f, RED));*/
-		balls.push_back(Ball(vf2d(500, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000.0f, 1.0f, 0.0f, GREEN));
+		balls.push_back(Ball(vf2d(300, 500), vf2d(20.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
+		balls.push_back(Ball(vf2d(400, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.0f, 0.0f, RED));
+		balls.push_back(Ball(vf2d(500, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, GREEN));
 
 		return true;
 	}
@@ -306,9 +293,7 @@ public:
 	{
 		Render();
 		Controls();
-		SeperateAllBalls();
-		StimulateTimestep(FPS * 1.0f);
-		//Update(FPS);
+		StimulateTimestep(FPS);
 
 		return true;
 	}
