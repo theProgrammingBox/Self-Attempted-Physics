@@ -28,9 +28,6 @@ private:
 	float savedAngle;
 	float savedAngularVelocity;
 
-	float positionOffset;
-	float timeOffset;
-
 public:
 	Ball() :
 		position(0.0f, 0.0f),
@@ -48,9 +45,7 @@ public:
 		savedPosition(0.0f, 0.0f),
 		savedVelocity(0.0f, 0.0f),
 		savedAngle(0.0f),
-		savedAngularVelocity(0.0f),
-		positionOffset(0.0f),
-		timeOffset(0.0f) {};
+		savedAngularVelocity(0.0f) {};
 
 	Ball(
 		vf2d position,
@@ -77,9 +72,8 @@ public:
 		savedPosition(position),
 		savedVelocity(velocity),
 		savedAngle(angle),
-		savedAngularVelocity(angularVelocity),
-		positionOffset(0.0f),
-		timeOffset(0.0f) {};
+		savedAngularVelocity(angularVelocity) {};
+
 
 	vf2d GetPosition() const { return position; };
 	vf2d GetVelocity() const { return velocity; };
@@ -93,8 +87,6 @@ public:
 	float GetInverseMass() const { return inverseMass; };
 	float GetInverseInertia() const { return inverseInertia; };
 	vf2d GetNormal() const { return normal; };
-	float GetPositionOffset() const { return positionOffset; };
-	float GetTimeOffset() const { return timeOffset; };
 	bool SameState() const { return (position == savedPosition && velocity == savedVelocity && angle == savedAngle && angularVelocity == savedAngularVelocity); };
 
 	void SetPosition(vf2d positon);
@@ -106,8 +98,6 @@ public:
 	void SetElasticity(float elasticity);
 	void SetFriction(float friction);
 	void SetColor(Pixel color);
-	void SetPositionOffset(float positionOffset);
-	void SetTimeOffset(float timeOffset);
 
 	void ApplyForce(vf2d force);
 	void ApplyAngularForce(float angularForce);
@@ -141,8 +131,6 @@ void Ball::SetDensity(float density)
 void Ball::SetElasticity(float elasticity) { this->elasticity = elasticity; }
 void Ball::SetFriction(float friction) { this->friction = friction; }
 void Ball::SetColor(Pixel color) { this->color = color; }
-void Ball::SetPositionOffset(float positionOffset) { this->positionOffset = positionOffset; }
-void Ball::SetTimeOffset(float timeOffset) { this->timeOffset = timeOffset; }
 
 void Ball::ApplyForce(vf2d force) { velocity += force * inverseMass; }
 void Ball::ApplyAngularForce(float angularForce) { angularVelocity += angularForce * inverseInertia; }
