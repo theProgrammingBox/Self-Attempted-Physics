@@ -4,7 +4,7 @@
 class Example : public olc::PixelGameEngine
 {
 private:
-	const float FPS = 1.0 / 60.0;
+	const int INTERVALS = 10;
 	Random random;
 	vector<Ball> balls;
 	Ball* selectedBall = nullptr;
@@ -18,7 +18,7 @@ private:
 		return Pixel(r * 0xff, g * 0xff, b * 0xff);
 	}
 
-	void Controls()
+	void Controls(float dt)
 	{
 		if (GetMouse(0).bPressed || GetMouse(1).bPressed && balls.size() != 0)
 		{
@@ -41,14 +41,14 @@ private:
 		{
 			if (selectedBall != NULL)
 			{
-				selectedBall->SetPosition(GetMousePos());
-				selectedBall->SetVelocity(vf2d(0, 0));
+				selectedBall->SetVelocity((-selectedBall->position + GetMousePos()) / dt);
 			}
 		}
 		if (GetMouse(0).bReleased)
 		{
 			if (selectedBall != NULL)
 			{
+				//selectedBall->SetVelocity(vf2d(0, 0));
 				selectedBall = nullptr;
 			}
 		}
@@ -63,7 +63,7 @@ private:
 		{
 			if (selectedBall != NULL)
 			{
-				selectedBall->SetVelocity((GetMousePos() - selectedBall->position) / (200 * FPS));
+				selectedBall->SetVelocity((-selectedBall->position + GetMousePos()) / (1000 * dt));
 				selectedBall = NULL;
 			}
 		}
@@ -94,8 +94,7 @@ private:
 					vf2d dPos = balls[i].position - balls[j].position;
 					float distanceSquared = dPos.mag2();
 					float totalThickness = balls[i].radius + balls[j].radius;
-					float iffyOverlap = distanceSquared - totalThickness * totalThickness;
-					if (iffyOverlap <= 0.0f)
+					if (distanceSquared <= totalThickness * totalThickness)
 					{
 						vf2d collisionNormal;
 						float distance = sqrt(distanceSquared);
@@ -188,9 +187,12 @@ public:
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		Render();
-		Controls();
-		SeperateAllBalls();
-		StimulateTimestep(FPS);
+		Controls(fElapsedTime);
+		for (int i = 0; i < INTERVALS; i++)
+		{
+			SeperateAllBalls();
+			StimulateTimestep(fElapsedTime / INTERVALS);
+		}
 
 		return true;
 	}
