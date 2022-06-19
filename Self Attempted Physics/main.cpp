@@ -91,10 +91,10 @@ private:
 			{
 				for (int j = i + 1; j < balls.size(); j++)
 				{
-					vf2d dPos = balls[i].position - balls[j].position;
+					vf2d dPos = balls[j].position - balls[i].position;
 					float distanceSquared = dPos.mag2();
-					float totalThickness = balls[i].radius + balls[j].radius;
-					if (distanceSquared <= totalThickness * totalThickness)
+					float totalRadius = balls[i].radius + balls[j].radius;
+					if (distanceSquared <= totalRadius * totalRadius)
 					{
 						vf2d collisionNormal;
 						float distance = sqrt(distanceSquared);
@@ -106,10 +106,10 @@ private:
 						{
 							collisionNormal = dPos / distance;
 						}
-						float impulse = (distance - totalThickness) / (balls[i].inverseMass + balls[j].inverseMass);
+						float impulse = (distance - totalRadius) / (balls[i].inverseMass + balls[j].inverseMass);
 						vf2d impulseVector = collisionNormal * impulse;
-						balls[i].AddDisplacement(-impulseVector);
-						balls[j].AddDisplacement(impulseVector);
+						balls[i].AddDisplacement(impulseVector);
+						balls[j].AddDisplacement(-impulseVector);
 					}
 				}
 			}
@@ -124,19 +124,36 @@ private:
 		{
 			for (int j = i + 1; j < balls.size(); j++)
 			{
-				vf2d dPos = balls[i].position - balls[j].position;
+				vf2d dPos = balls[j].position - balls[i].position;
 				float distanceSquared = dPos.mag2();
-				float totalThickness = balls[i].radius + balls[j].radius;
-				if (distanceSquared <= totalThickness * totalThickness)
+				float totalRadius = balls[i].radius + balls[j].radius;
+				if (distanceSquared <= totalRadius * totalRadius)
 				{
-					float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
 					vf2d collisionNormal = dPos / sqrt(distanceSquared);
-					vf2d dVel = balls[i].velocity - balls[j].velocity;
-					float normalVelocity = dVel.dot(collisionNormal);
-					float impulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
-					vf2d impulseVector = collisionNormal * impulse * elasticity;
-					balls[i].AddForce(-impulseVector);
-					balls[j].AddForce(impulseVector);
+					vf2d tangentalNormal = collisionNormal.perp();
+					vf2d dVel =
+						(balls[j].velocity + balls[j].radius * tangentalNormal * balls[j].angularVelocity) -
+						(balls[i].velocity + balls[i].radius * tangentalNormal * balls[i].angularVelocity);
+					float normalVelocity = collisionNormal.dot(dVel);
+					if (normalVelocity < 0)
+					{
+						float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
+						double friction = balls[i].friction * balls[j].friction;
+						double tangentalVelocity = tangentalNormal.dot(dVel);
+						float collisionImpulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
+						double frictionImpulse = tangentalVelocity / (
+							balls[i].inverseMass + balls[i].radius * balls[i].radius * balls[i].inverseInertia +
+							balls[j].inverseMass + balls[j].radius * balls[j].radius * balls[j].inverseInertia);
+						if (fabs(frictionImpulse) > fabs(collisionImpulse * friction))
+						{
+							frictionImpulse = (frictionImpulse > 0 ? collisionImpulse : -collisionImpulse) * friction;
+						}
+						vf2d totalForce = (collisionNormal * collisionImpulse + tangentalNormal * frictionImpulse) * elasticity;
+						balls[i].AddForce(totalForce);
+						balls[i].AddTorque(balls[i].radius * frictionImpulse * elasticity);
+						balls[j].AddForce(-totalForce);
+						balls[j].AddTorque(-balls[j].radius * frictionImpulse * elasticity);
+					}
 				}
 			}
 		}
@@ -152,6 +169,7 @@ private:
 			DrawCircle(ball.position, ball.radius, ball.color);
 			DrawLine(ball.position, ball.position + ball.velocity, ball.color);
 			DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
+			//DrawLine(GetWindowSize() / 2.0f, ball.position, ball.color);
 		}
 	}
 
