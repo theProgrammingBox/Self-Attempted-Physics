@@ -44,5 +44,5 @@ public:
 	void AddDisplacement(vf2d displacement) { displacements.push_back(displacement); }
 
 	void UpdateOverlaps();
-	void Update(float dt);
+	void Update(float dt, vf2d pos);
 };

@@ -70,8 +70,8 @@ private:
 		{
 			Ball ball;
 			ball.SetPosition(GetMousePos());
-			//ball.SetRadius(random.UDoubleRandom() * 8 + 4);
-			ball.SetRadius(10);
+			ball.SetRadius(random.UDoubleRandom() * 8 + 4);
+			ball.SetElasticity(random.UDoubleRandom());
 			ball.SetColor(mapToRainbow(random.UDoubleRandom()));
 			balls.push_back(ball);
 		}
@@ -122,36 +122,19 @@ private:
 		{
 			for (int j = i + 1; j < balls.size(); j++)
 			{
-				vf2d dPos = balls[j].position - balls[i].position;
+				vf2d dPos = balls[i].position - balls[j].position;
 				float distanceSquared = dPos.mag2();
 				float totalRadius = balls[i].radius + balls[j].radius;
 				if (distanceSquared < totalRadius * totalRadius)
 				{
-					vf2d collisionNormal = dPos / sqrt(distanceSquared);
-					vf2d tangentalNormal = collisionNormal.perp();
-					vf2d dVel =
-						(balls[j].velocity + balls[j].radius * tangentalNormal * balls[j].angularVelocity) -
-						(balls[i].velocity + balls[i].radius * tangentalNormal * balls[i].angularVelocity);
+					vf2d collisionNormal = dPos.norm();
+					vf2d dVel = balls[i].velocity - balls[j].velocity;
 					float normalVelocity = collisionNormal.dot(dVel);
-					if (normalVelocity < 0)
-					{
-						float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
-						double friction = balls[i].friction * balls[j].friction;
-						double tangentalVelocity = tangentalNormal.dot(dVel);
-						float collisionImpulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
-						double frictionImpulse = tangentalVelocity / (
-							balls[i].inverseMass + balls[i].radius * balls[i].radius * balls[i].inverseInertia +
-							balls[j].inverseMass + balls[j].radius * balls[j].radius * balls[j].inverseInertia);
-						if (fabs(frictionImpulse) > fabs(collisionImpulse * friction))
-						{
-							frictionImpulse = (frictionImpulse > 0 ? collisionImpulse : -collisionImpulse) * friction;
-						}
-						vf2d totalForce = (collisionNormal * collisionImpulse + tangentalNormal * frictionImpulse) * elasticity;
-						balls[i].AddForce(totalForce);
-						balls[i].AddTorque(balls[i].radius * frictionImpulse * elasticity);
-						balls[j].AddForce(-totalForce);
-						balls[j].AddTorque(-balls[j].radius * frictionImpulse * elasticity);
-					}
+					float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
+					float collisionImpulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
+					vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
+					balls[i].AddForce(-totalForce);
+					balls[j].AddForce(totalForce);
 				}
 			}
 		}
@@ -159,51 +142,57 @@ private:
 
 	void StimulateTimestep(float dt)
 	{
-		int ball1Index = -1;
-		int ball2Index = -1;
-		Update(dt);
-		float dtGlobalOffset = 0;
-		for (int i = 0; i < balls.size(); i++)
+		int ball1Index, ball2Index;
+		float remainingDt = dt;
+		while (remainingDt != 0.0f)
 		{
-			for (int j = i + 1; j < balls.size(); j++)
+			ball1Index = -1;
+			ball2Index = -1;
+			Update(remainingDt);
+			float dtGlobalOffset = 0.0f;
+			for (int i = 0; i < balls.size(); i++)
 			{
-				vf2d dPos = balls[i].position - balls[j].position;
-				float distanceSquared = dPos.mag2();
-				float totalRadius = balls[i].radius + balls[j].radius;
-				float iffyOverlap = distanceSquared - totalRadius * totalRadius;
-				if (iffyOverlap < 0)
+				for (int j = i + 1; j < balls.size(); j++)
 				{
-					vf2d dVel = balls[i].velocity - balls[j].velocity;
-					float a = dVel.mag2();
-					if (a != 0)
+					vf2d dPos = balls[i].position - balls[j].position;
+					float distanceSquared = dPos.mag2();
+					float totalRadius = balls[i].radius + balls[j].radius;
+					float iffyOverlap = distanceSquared - totalRadius * totalRadius;
+					if (iffyOverlap < 0)
 					{
-						float b = dPos.dot(dVel);
-						if (b < 0)
+						vf2d dVel = balls[i].velocity - balls[j].velocity;
+						float a = dVel.mag2();
+						if (a != 0)
 						{
-							float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
-							if (dtOffset < dtGlobalOffset)
+							float b = dPos.dot(dVel);
+							if (b < 0)
 							{
-								ball1Index = i;
-								ball2Index = j;
-								dtGlobalOffset = dtOffset < -dt ? -dt : dtOffset;
+								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
+								if (dtOffset < dtGlobalOffset)
+								{
+									ball1Index = i;
+									ball2Index = j;
+									dtGlobalOffset = dtOffset < -dt ? -dt : dtOffset;
+								}
 							}
 						}
 					}
 				}
 			}
-		}
-		Update(dtGlobalOffset);
-		if (ball1Index != -1)
-		{
-			vf2d dPos = balls[ball1Index].position - balls[ball2Index].position;
-			vf2d collisionNormal = dPos.norm();
-			vf2d dVel = balls[ball1Index].velocity - balls[ball2Index].velocity;
-			float normalVelocity = collisionNormal.dot(dVel);
-			float elasticity = (balls[ball1Index].elasticity + balls[ball2Index].elasticity) * 0.5f + 1.0f;
-			float collisionImpulse = normalVelocity / (balls[ball1Index].inverseMass + balls[ball2Index].inverseMass);
-			vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
-			balls[ball1Index].AddForce(-totalForce);
-			balls[ball2Index].AddForce(totalForce);
+			Update(dtGlobalOffset);
+			remainingDt = -dtGlobalOffset;
+			if (ball1Index != -1)
+			{
+				vf2d dPos = balls[ball1Index].position - balls[ball2Index].position;
+				vf2d collisionNormal = dPos.norm();
+				vf2d dVel = balls[ball1Index].velocity - balls[ball2Index].velocity;
+				float normalVelocity = collisionNormal.dot(dVel);
+				float elasticity = (balls[ball1Index].elasticity + balls[ball2Index].elasticity) * 0.5f + 1.0f;
+				float collisionImpulse = normalVelocity / (balls[ball1Index].inverseMass + balls[ball2Index].inverseMass);
+				vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
+				balls[ball1Index].AddForce(-totalForce);
+				balls[ball2Index].AddForce(totalForce);
+			}
 		}
 	}
 
@@ -215,8 +204,8 @@ private:
 		for (Ball& ball : balls)
 		{
 			DrawCircle(ball.position, ball.radius, ball.color);
-			DrawLine(ball.position, ball.position + ball.velocity, ball.color);
-			DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
+			//DrawLine(ball.position, ball.position + ball.velocity, ball.color);
+			//DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
 			//DrawLine(GetWindowSize() / 2.0f, ball.position, ball.color);
 		}
 	}
@@ -233,7 +222,7 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			ball.Update(dt);
+			ball.Update(dt, GetMousePos());
 		}
 	}
 
@@ -245,36 +234,12 @@ public:
 
 	bool OnUserCreate() override
 	{
-		balls.clear(); balls.push_back(Ball(
-			vf2d(100, 500),
-			vf2d(10.0f, 0.0f),
-			0.0f,
-			0.0f,
-			10.0f,
-			1000.0f,
-			1.0f,
-			0.0f,
-			olc::RED));
-		balls.push_back(Ball(
-			vf2d(150, 500),
-			vf2d(0.0f, 0.0f),
-			0.0f,
-			0.0f,
-			10.0f,
-			1.0f,
-			0.8f,
-			0.0f,
-			olc::RED));
-		balls.push_back(Ball(
-			vf2d(200, 500),
-			vf2d(0.0f, 0.0f),
-			0.0f,
-			0.0f,
-			10.0f,
-			1000.0f,
-			1.0f,
-			0.0f,
-			olc::RED));
+		/*balls.clear(); balls.push_back(
+			Ball(vf2d(100, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
+		balls.push_back(
+			Ball(vf2d(150, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.8f, 0.0f, WHITE));
+		balls.push_back(
+			Ball(vf2d(200, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));*/
 
 		return true;
 	}
@@ -283,7 +248,10 @@ public:
 	{
 		Render();
 		Controls(fElapsedTime);
-		StimulateTimestep(fElapsedTime);
+		SeperateAllBalls();
+		//StimulateTimestep(fElapsedTime);
+		Update(fElapsedTime);
+		Collision();
 
 		return true;
 	}

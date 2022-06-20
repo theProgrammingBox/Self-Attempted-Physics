@@ -17,7 +17,7 @@ void Ball::UpdateOverlaps()
 	position += avgDisplacements * inverseMass;
 }
 
-void Ball::Update(float dt)
+void Ball::Update(float dt, vf2d pos)
 {
 	vf2d avgForces = vf2d(0, 0);
 	if (forces.size() != 0)
@@ -28,7 +28,6 @@ void Ball::Update(float dt)
 			sumForces += force;
 		}
 		avgForces = sumForces / forces.size();
-		//cout << "forces.size() = " << forces.size() << endl;
 		forces.clear();
 	}
 
@@ -41,23 +40,12 @@ void Ball::Update(float dt)
 			sumTorques += torque;
 		}
 		avgTorques = sumTorques / torques.size();
-		//cout << "torques.size() = " << torques.size() << endl;
 		torques.clear();
 	}
 
-	/*cout << "Velocity1: " << velocity << endl;
-	cout << "Angular Velocity1: " << angularVelocity << endl;
-	cout << "avgForces: " << avgForces << endl;
-	cout << "avgTorques: " << avgTorques << endl;
-	cout << "inverseMass: " << inverseMass << endl;
-	cout << "inverseInertia: " << inverseInertia << endl;*/
-
-	velocity += avgForces * inverseMass;
+	velocity += (-position + pos) * dt + avgForces * inverseMass;
 	angularVelocity += avgTorques * inverseInertia;
 	position += velocity * dt;
 	angle += angularVelocity * dt;
 	normal = vf2d(cos(angle), sin(angle));
-
-	/*cout << "Velocity2: " << velocity << endl;
-	cout << "Angular Velocity2: " << angularVelocity << endl;*/
 }
