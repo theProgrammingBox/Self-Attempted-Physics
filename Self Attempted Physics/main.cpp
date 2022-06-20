@@ -4,7 +4,6 @@
 class Example : public olc::PixelGameEngine
 {
 private:
-	const int INTERVALS = 10;
 	Random random;
 	vector<Ball> balls;
 	Ball* selectedBall = nullptr;
@@ -117,9 +116,8 @@ private:
 		}
 	}
 
-	void StimulateTimestep(float dt)
+	void Collision()
 	{
-		Update(dt);
 		for (int i = 0; i < balls.size(); i++)
 		{
 			for (int j = i + 1; j < balls.size(); j++)
@@ -127,7 +125,7 @@ private:
 				vf2d dPos = balls[j].position - balls[i].position;
 				float distanceSquared = dPos.mag2();
 				float totalRadius = balls[i].radius + balls[j].radius;
-				if (distanceSquared <= totalRadius * totalRadius)
+				if (distanceSquared < totalRadius * totalRadius)
 				{
 					vf2d collisionNormal = dPos / sqrt(distanceSquared);
 					vf2d tangentalNormal = collisionNormal.perp();
@@ -156,6 +154,56 @@ private:
 					}
 				}
 			}
+		}
+	}
+
+	void StimulateTimestep(float dt)
+	{
+		int ball1Index = -1;
+		int ball2Index = -1;
+		Update(dt);
+		float dtGlobalOffset = 0;
+		for (int i = 0; i < balls.size(); i++)
+		{
+			for (int j = i + 1; j < balls.size(); j++)
+			{
+				vf2d dPos = balls[i].position - balls[j].position;
+				float distanceSquared = dPos.mag2();
+				float totalRadius = balls[i].radius + balls[j].radius;
+				float iffyOverlap = distanceSquared - totalRadius * totalRadius;
+				if (iffyOverlap < 0)
+				{
+					vf2d dVel = balls[i].velocity - balls[j].velocity;
+					float a = dVel.mag2();
+					if (a != 0)
+					{
+						float b = dPos.dot(dVel);
+						if (b < 0)
+						{
+							float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
+							if (dtOffset < dtGlobalOffset)
+							{
+								ball1Index = i;
+								ball2Index = j;
+								dtGlobalOffset = dtOffset < -dt ? -dt : dtOffset;
+							}
+						}
+					}
+				}
+			}
+		}
+		Update(dtGlobalOffset);
+		if (ball1Index != -1)
+		{
+			vf2d dPos = balls[ball1Index].position - balls[ball2Index].position;
+			vf2d collisionNormal = dPos.norm();
+			vf2d dVel = balls[ball1Index].velocity - balls[ball2Index].velocity;
+			float normalVelocity = collisionNormal.dot(dVel);
+			float elasticity = (balls[ball1Index].elasticity + balls[ball2Index].elasticity) * 0.5f + 1.0f;
+			float collisionImpulse = normalVelocity / (balls[ball1Index].inverseMass + balls[ball2Index].inverseMass);
+			vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
+			balls[ball1Index].AddForce(-totalForce);
+			balls[ball2Index].AddForce(totalForce);
 		}
 	}
 
@@ -197,7 +245,36 @@ public:
 
 	bool OnUserCreate() override
 	{
-		balls.clear();
+		balls.clear(); balls.push_back(Ball(
+			vf2d(100, 500),
+			vf2d(10.0f, 0.0f),
+			0.0f,
+			0.0f,
+			10.0f,
+			1000.0f,
+			1.0f,
+			0.0f,
+			olc::RED));
+		balls.push_back(Ball(
+			vf2d(150, 500),
+			vf2d(0.0f, 0.0f),
+			0.0f,
+			0.0f,
+			10.0f,
+			1.0f,
+			0.8f,
+			0.0f,
+			olc::RED));
+		balls.push_back(Ball(
+			vf2d(200, 500),
+			vf2d(0.0f, 0.0f),
+			0.0f,
+			0.0f,
+			10.0f,
+			1000.0f,
+			1.0f,
+			0.0f,
+			olc::RED));
 
 		return true;
 	}
@@ -206,11 +283,7 @@ public:
 	{
 		Render();
 		Controls(fElapsedTime);
-		for (int i = 0; i < INTERVALS; i++)
-		{
-			SeperateAllBalls();
-			StimulateTimestep(fElapsedTime / INTERVALS);
-		}
+		StimulateTimestep(fElapsedTime);
 
 		return true;
 	}
