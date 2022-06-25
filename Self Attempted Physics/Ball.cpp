@@ -17,7 +17,7 @@ void Ball::UpdateOverlaps()
 	position += avgDisplacements * inverseMass;
 }
 
-void Ball::Update(float dt, vf2d pos)
+void Ball::Update(float dt)
 {
 	vf2d avgForces = vf2d(0, 0);
 	if (forces.size() != 0)
@@ -43,9 +43,15 @@ void Ball::Update(float dt, vf2d pos)
 		torques.clear();
 	}
 
-	velocity += (-position + pos) * dt + avgForces * inverseMass;
+	velocity += avgForces * inverseMass;
 	angularVelocity += avgTorques * inverseInertia;
 	position += velocity * dt;
 	angle += angularVelocity * dt;
+
+	velocity += acceleration * dt;
+	angularVelocity += angularAcceleration * dt;
+
 	normal = vf2d(cos(angle), sin(angle));
+	acceleration = vf2d(0, 0);
+	angularAcceleration = 0;
 }

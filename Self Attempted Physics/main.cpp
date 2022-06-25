@@ -7,6 +7,7 @@ private:
 	Random random;
 	vector<Ball> balls;
 	Ball* selectedBall = nullptr;
+	float elapsedTime;
 
 	Pixel mapToRainbow(float d) { // 0 - 1
 		d *= 6.0;
@@ -21,6 +22,7 @@ private:
 	{
 		if (GetMouse(0).bPressed || GetMouse(1).bPressed && balls.size() != 0)
 		{
+			//IDK();
 			selectedBall = nullptr;
 			float closest = INFINITY;
 			float distanceSquared;
@@ -70,7 +72,7 @@ private:
 		{
 			Ball ball;
 			ball.SetPosition(GetMousePos());
-			ball.SetRadius(random.UDoubleRandom() * 8 + 4);
+			ball.SetRadius(random.UDoubleRandom() * 8 + 10);
 			ball.SetElasticity(random.UDoubleRandom());
 			ball.SetColor(mapToRainbow(random.UDoubleRandom()));
 			balls.push_back(ball);
@@ -80,11 +82,20 @@ private:
 			balls.clear();
 			selectedBall = nullptr;
 		}
+		/*if (GetKey(olc::Key::UP).bHeld)
+		{
+			elapsedTime += 0.000001;
+		}
+		if (GetKey(olc::Key::DOWN).bHeld)
+		{
+			elapsedTime -= 0.000001;
+		}*/
+		//elapsedTime = (GetWindowSize().y / 2.0f - GetMousePos().y) * 0.000001;
 	}
 
-	void SeperateAllBalls()
+	/*void SeperateAllBalls()
 	{
-		for (int iterations = 0; iterations < 1; iterations++)
+		for (int iterations = 0; iterations < 100; iterations++)
 		{
 			for (int i = 0; i < balls.size(); i++)
 			{
@@ -127,25 +138,50 @@ private:
 				float totalRadius = balls[i].radius + balls[j].radius;
 				if (distanceSquared < totalRadius * totalRadius)
 				{
-					vf2d collisionNormal = dPos.norm();
-					vf2d dVel = balls[i].velocity - balls[j].velocity;
+					vf2d collisionNormal = dPos / sqrt(distanceSquared);
+					vf2d radiusNormal1 = (-collisionNormal.perp()) * balls[i].radius;
+					vf2d radiusNormal2 = collisionNormal.perp() * balls[j].radius;
+					vf2d dVel =
+						(balls[i].velocity + radiusNormal1 * balls[i].angularVelocity) -
+						(balls[j].velocity + radiusNormal2 * balls[j].angularVelocity);
 					float normalVelocity = collisionNormal.dot(dVel);
-					float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
-					float collisionImpulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
-					vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
-					balls[i].AddForce(-totalForce);
-					balls[j].AddForce(totalForce);
+					if (normalVelocity < 0.0f)
+					{
+						float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
+						float collisionImpulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
+						vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
+						balls[i].AddForce(-totalForce);
+						balls[j].AddForce(totalForce);
+					}
 				}
 			}
 		}
 	}
 
+	void SaveState()
+	{
+		for (Ball& ball : balls)
+		{
+			ball.SaveState();
+		}
+	}
+
+	void RestoreState()
+	{
+		for (Ball& ball : balls)
+		{
+			ball.RestoreState();
+		}
+	}*/
+
 	void StimulateTimestep(float dt)
 	{
+		//SaveState();
 		int ball1Index, ball2Index;
 		float remainingDt = dt;
 		while (remainingDt != 0.0f)
 		{
+			//RestoreState();
 			ball1Index = -1;
 			ball2Index = -1;
 			Update(remainingDt);
@@ -200,11 +236,12 @@ private:
 	{
 		Clear(olc::BLACK);
 		DrawString(10, 10, "Ball Count: " + std::to_string(balls.size()), olc::WHITE);
+		DrawString(10, 30, "elapsedTime: " + std::to_string(elapsedTime), olc::WHITE);
 
 		for (Ball& ball : balls)
 		{
 			DrawCircle(ball.position, ball.radius, ball.color);
-			//DrawLine(ball.position, ball.position + ball.velocity, ball.color);
+			DrawLine(ball.position, ball.position + ball.velocity, ball.color);
 			//DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
 			//DrawLine(GetWindowSize() / 2.0f, ball.position, ball.color);
 		}
@@ -218,11 +255,21 @@ private:
 		}
 	}
 
+	/*void IDK()
+	{
+		for (Ball& ball : balls)
+		{
+			ball.velocity = vf2d(0, 0);
+		}
+	}*/
+
 	void Update(float dt)
 	{
 		for (Ball& ball : balls)
 		{
-			ball.Update(dt, GetMousePos());
+			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			ball.AddAngularAcceleration(0);
+			ball.Update(dt);
 		}
 	}
 
@@ -234,12 +281,15 @@ public:
 
 	bool OnUserCreate() override
 	{
-		/*balls.clear(); balls.push_back(
-			Ball(vf2d(100, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
+		elapsedTime = 0.002;
+		balls.clear();
 		balls.push_back(
+			Ball(vf2d(100, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
+		/*balls.push_back(
 			Ball(vf2d(150, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.8f, 0.0f, WHITE));
 		balls.push_back(
-			Ball(vf2d(200, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));*/
+			Ball(vf2d(200, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
+		*/
 
 		return true;
 	}
@@ -247,11 +297,11 @@ public:
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		Render();
-		Controls(fElapsedTime);
-		SeperateAllBalls();
-		//StimulateTimestep(fElapsedTime);
-		Update(fElapsedTime);
-		Collision();
+		Controls(elapsedTime);
+		//SeperateAllBalls();
+		StimulateTimestep(elapsedTime);
+		//Update(1.0f / 60.0f);
+		//Collision();
 
 		return true;
 	}
