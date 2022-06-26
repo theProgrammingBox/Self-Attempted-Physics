@@ -22,7 +22,6 @@ private:
 	{
 		if (GetMouse(0).bPressed || GetMouse(1).bPressed && balls.size() != 0)
 		{
-			//IDK();
 			selectedBall = nullptr;
 			float closest = INFINITY;
 			float distanceSquared;
@@ -49,7 +48,6 @@ private:
 		{
 			if (selectedBall != NULL)
 			{
-				//selectedBall->SetVelocity(vf2d(0, 0));
 				selectedBall = nullptr;
 			}
 		}
@@ -82,80 +80,7 @@ private:
 			balls.clear();
 			selectedBall = nullptr;
 		}
-		/*if (GetKey(olc::Key::UP).bHeld)
-		{
-			elapsedTime += 0.000001;
-		}
-		if (GetKey(olc::Key::DOWN).bHeld)
-		{
-			elapsedTime -= 0.000001;
-		}*/
-		//elapsedTime = (GetWindowSize().y / 2.0f - GetMousePos().y) * 0.000001;
-	}
-
-	/*void SeperateAllBalls()
-	{
-		for (int iterations = 0; iterations < 100; iterations++)
-		{
-			for (int i = 0; i < balls.size(); i++)
-			{
-				for (int j = i + 1; j < balls.size(); j++)
-				{
-					vf2d dPos = balls[j].position - balls[i].position;
-					float distanceSquared = dPos.mag2();
-					float totalRadius = balls[i].radius + balls[j].radius;
-					if (distanceSquared <= totalRadius * totalRadius)
-					{
-						vf2d collisionNormal;
-						float distance = sqrt(distanceSquared);
-						if (distance == 0.0f)
-						{
-							collisionNormal = vf2d(1.0f, 0.0f);
-						}
-						else
-						{
-							collisionNormal = dPos / distance;
-						}
-						float impulse = (distance - totalRadius) / (balls[i].inverseMass + balls[j].inverseMass);
-						vf2d impulseVector = collisionNormal * impulse;
-						balls[i].AddDisplacement(impulseVector);
-						balls[j].AddDisplacement(-impulseVector);
-					}
-				}
-			}
-			UpdateOverlaps();
-		}
-	}
-
-	void Collision()
-	{
-		for (int i = 0; i < balls.size(); i++)
-		{
-			for (int j = i + 1; j < balls.size(); j++)
-			{
-				vf2d dPos = balls[i].position - balls[j].position;
-				float distanceSquared = dPos.mag2();
-				float totalRadius = balls[i].radius + balls[j].radius;
-				if (distanceSquared < totalRadius * totalRadius)
-				{
-					vf2d collisionNormal = dPos / sqrt(distanceSquared);
-					vf2d radiusNormal1 = (-collisionNormal.perp()) * balls[i].radius;
-					vf2d radiusNormal2 = collisionNormal.perp() * balls[j].radius;
-					vf2d dVel =
-						(balls[i].velocity + radiusNormal1 * balls[i].angularVelocity) -
-						(balls[j].velocity + radiusNormal2 * balls[j].angularVelocity);
-					float normalVelocity = collisionNormal.dot(dVel);
-					if (normalVelocity < 0.0f)
-					{
-						float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
-						float collisionImpulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
-						vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
-						balls[i].AddForce(-totalForce);
-						balls[j].AddForce(totalForce);
-					}
-				}
-			}
-		}
+		//elapsedTime = (GetWindowSize().y / 2.0f - GetMousePos().y) * 0.00001;
 	}
 
 	void SaveState()
@@ -172,20 +97,26 @@ private:
 		{
 			ball.RestoreState();
 		}
-	}*/
+	}
+
+	struct collisionPair
+	{
+		Ball* ball1;
+		Ball* ball2;
+	};
 
 	void StimulateTimestep(float dt)
 	{
-		//SaveState();
-		int ball1Index, ball2Index;
+		collisionPair collision;
+		vector<collisionPair> collisions;
 		float remainingDt = dt;
 		while (remainingDt != 0.0f)
 		{
-			//RestoreState();
-			ball1Index = -1;
-			ball2Index = -1;
+			bool maxed = false;	//balls cant revert back in time because it is past the last save
 			Update(remainingDt);
 			float dtGlobalOffset = 0.0f;
+			collision.ball1 = nullptr;
+			collision.ball2 = nullptr;
 			for (int i = 0; i < balls.size(); i++)
 			{
 				for (int j = i + 1; j < balls.size(); j++)
@@ -206,9 +137,27 @@ private:
 								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
 								if (dtOffset < dtGlobalOffset)
 								{
-									ball1Index = i;
-									ball2Index = j;
-									dtGlobalOffset = dtOffset < -dt ? -dt : dtOffset;
+									collision.ball1 = &balls[i];
+									collision.ball2 = &balls[j];
+									if (!maxed)
+									{
+										//if (dtOffset < -remainingDt)
+										if (dtOffset < -dt)
+										{
+											maxed = true;
+											//dtGlobalOffset = -remainingDt;
+											dtGlobalOffset = -dt;
+											collisions.push_back(collision);
+										}
+										else
+										{
+											dtGlobalOffset = dtOffset;
+										}
+									}
+									else
+									{
+										collisions.push_back(collision);
+									}
 								}
 							}
 						}
@@ -217,17 +166,35 @@ private:
 			}
 			Update(dtGlobalOffset);
 			remainingDt = -dtGlobalOffset;
-			if (ball1Index != -1)
+			if (collision.ball1 != nullptr)
 			{
-				vf2d dPos = balls[ball1Index].position - balls[ball2Index].position;
-				vf2d collisionNormal = dPos.norm();
-				vf2d dVel = balls[ball1Index].velocity - balls[ball2Index].velocity;
-				float normalVelocity = collisionNormal.dot(dVel);
-				float elasticity = (balls[ball1Index].elasticity + balls[ball2Index].elasticity) * 0.5f + 1.0f;
-				float collisionImpulse = normalVelocity / (balls[ball1Index].inverseMass + balls[ball2Index].inverseMass);
-				vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
-				balls[ball1Index].AddForce(-totalForce);
-				balls[ball2Index].AddForce(totalForce);
+				if (!maxed)
+				{
+					vf2d dPos = collision.ball1->position - collision.ball2->position;
+					vf2d collisionNormal = dPos.norm();
+					vf2d dVel = collision.ball1->velocity - collision.ball2->velocity;
+					float normalVelocity = collisionNormal.dot(dVel);
+					float elasticity = (collision.ball1->elasticity + collision.ball2->elasticity) * 0.5f + 1.0f;
+					float collisionImpulse = normalVelocity / (collision.ball1->inverseMass + collision.ball2->inverseMass);
+					vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
+					collision.ball1->AddForce(-totalForce);
+					collision.ball2->AddForce(totalForce);
+				}
+				else
+				{
+					for (collisionPair& c : collisions)
+					{
+						vf2d dPos = c.ball1->position - c.ball2->position;
+						vf2d collisionNormal = dPos.norm();
+						vf2d dVel = c.ball1->velocity - c.ball2->velocity;
+						float normalVelocity = collisionNormal.dot(dVel);
+						float elasticity = (c.ball1->elasticity + c.ball2->elasticity) * 0.5f + 1.0f;
+						float collisionImpulse = normalVelocity / (c.ball1->inverseMass + c.ball2->inverseMass);
+						vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
+						c.ball1->AddForce(-totalForce);
+						c.ball2->AddForce(totalForce);
+					}
+				}
 			}
 		}
 	}
@@ -254,14 +221,6 @@ private:
 			ball.UpdateOverlaps();
 		}
 	}
-
-	/*void IDK()
-	{
-		for (Ball& ball : balls)
-		{
-			ball.velocity = vf2d(0, 0);
-		}
-	}*/
 
 	void Update(float dt)
 	{
@@ -298,10 +257,7 @@ public:
 	{
 		Render();
 		Controls(elapsedTime);
-		//SeperateAllBalls();
 		StimulateTimestep(elapsedTime);
-		//Update(1.0f / 60.0f);
-		//Collision();
 
 		return true;
 	}
