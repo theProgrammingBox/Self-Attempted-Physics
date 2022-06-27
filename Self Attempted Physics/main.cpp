@@ -99,6 +99,45 @@ private:
 		}
 	}
 
+	bool ResolveContacts()
+	{
+		bool contact = false;
+		for (int i = 0; i < balls.size(); i++)
+		{
+			//balls[i].contacts.clear();
+			for (int j = i + 1; j < balls.size(); j++)
+			{
+				vf2d dPos = balls[i].position - balls[j].position;
+				float distanceSquared = dPos.mag2();
+				float totalRadius = balls[i].radius + balls[j].radius;
+				float iffyOverlap = distanceSquared - totalRadius * totalRadius;
+				if (iffyOverlap < 0)
+				{
+					vf2d dVel = balls[i].velocity - balls[j].velocity;
+					float a = dVel.mag2();
+					if (a != 0)
+					{
+						float b = dPos.dot(dVel);
+						if (b < 0)
+						{
+							contact = true;
+							//balls[i].contacts.push_back(&balls[j]);
+
+							vf2d collisionNormal = dPos / sqrt(distanceSquared);
+							float normalVelocity = collisionNormal.dot(dVel);
+							float elasticity = (balls[i].elasticity + balls[j].elasticity) * 0.5f + 1.0f;
+							float collisionImpulse = normalVelocity / (balls[i].inverseMass + balls[j].inverseMass);
+							vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
+							balls[i].AddForce(-totalForce);
+							balls[j].AddForce(totalForce);
+						}
+					}
+				}
+			}
+		}
+		return contact;
+	}
+
 	struct collisionPair
 	{
 		Ball* ball1;
@@ -108,55 +147,58 @@ private:
 	void StimulateTimestep(float dt)
 	{
 		collisionPair collision;
-		vector<collisionPair> collisions;
+		//vector<collisionPair> collisions;
 		float remainingDt = dt;
 		while (remainingDt != 0.0f)
 		{
-			bool maxed = false;	//balls cant revert back in time because it is past the last save
-			Update(remainingDt);
-			float dtGlobalOffset = 0.0f;
-			collision.ball1 = nullptr;
-			collision.ball2 = nullptr;
-			for (int i = 0; i < balls.size(); i++)
+			if (!ResolveContacts())
 			{
-				for (int j = i + 1; j < balls.size(); j++)
+				//bool maxed = false;
+				Update(remainingDt);
+				float dtGlobalOffset = 0.0f;
+				collision.ball1 = nullptr;
+				collision.ball2 = nullptr;
+				for (int i = 0; i < balls.size(); i++)
 				{
-					vf2d dPos = balls[i].position - balls[j].position;
-					float distanceSquared = dPos.mag2();
-					float totalRadius = balls[i].radius + balls[j].radius;
-					float iffyOverlap = distanceSquared - totalRadius * totalRadius;
-					if (iffyOverlap < 0)
+					for (int j = i + 1; j < balls.size(); j++)
 					{
-						vf2d dVel = balls[i].velocity - balls[j].velocity;
-						float a = dVel.mag2();
-						if (a != 0)
+						vf2d dPos = balls[i].position - balls[j].position;
+						float distanceSquared = dPos.mag2();
+						float totalRadius = balls[i].radius + balls[j].radius;
+						float iffyOverlap = distanceSquared - totalRadius * totalRadius;
+						if (iffyOverlap < 0)
 						{
-							float b = dPos.dot(dVel);
-							if (b < 0)
+							vf2d dVel = balls[i].velocity - balls[j].velocity;
+							float a = dVel.mag2();
+							if (a != 0)
 							{
-								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
-								if (dtOffset < dtGlobalOffset)
+								float b = dPos.dot(dVel);
+								if (b < 0)
 								{
-									collision.ball1 = &balls[i];
-									collision.ball2 = &balls[j];
-									if (!maxed)
+									float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
+									if (dtOffset < dtGlobalOffset)
 									{
-										//if (dtOffset < -remainingDt)
-										if (dtOffset < -dt)
+										collision.ball1 = &balls[i];
+										collision.ball2 = &balls[j];
+										if (!maxed)
 										{
-											maxed = true;
-											//dtGlobalOffset = -remainingDt;
-											dtGlobalOffset = -dt;
-											collisions.push_back(collision);
+											//if (dtOffset < -remainingDt)
+											if (dtOffset < -dt)
+											{
+												maxed = true;
+												//dtGlobalOffset = -remainingDt;
+												dtGlobalOffset = -dt;
+												collisions.push_back(collision);
+											}
+											else
+											{
+												dtGlobalOffset = dtOffset;
+											}
 										}
 										else
 										{
-											dtGlobalOffset = dtOffset;
+											collisions.push_back(collision);
 										}
-									}
-									else
-									{
-										collisions.push_back(collision);
 									}
 								}
 							}
