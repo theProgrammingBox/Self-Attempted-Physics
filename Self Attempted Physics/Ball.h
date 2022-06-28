@@ -23,24 +23,24 @@ public:
 	vector<vf2d> displacements;
 	vf2d acceleration;
 	float angularAcceleration;
-	vf2d savedPosition;
+	/*vf2d savedPosition;
 	vf2d savedVelocity;
 	float savedAngle;
 	float savedAngularVelocity;
-	vector<Ball*> contacts;
+	vector<Ball*> contacts;*/
 
 	Ball() : position(0, 0), velocity(0, 0), angle(0), angularVelocity(0), radius(10), density(1), elasticity(1), friction(1), color(WHITE),
 		inverseMass(1 / (density * PI * radius * radius)), inverseInertia(2.0f * inverseMass / (radius * radius)), normal(cos(angle), sin(angle)),
 		forces(0), torques(0), displacements(0),
-		acceleration(0, 0), angularAcceleration(0), savedPosition(position), savedVelocity(velocity), savedAngle(angle), savedAngularVelocity(angularVelocity),
-		contacts(0) {};
+		acceleration(0, 0), angularAcceleration(0)/*, savedPosition(position), savedVelocity(velocity), savedAngle(angle), savedAngularVelocity(angularVelocity),
+		contacts(0)*/ {};
 
 	Ball(vf2d position, vf2d velocity, float angle, float angularVelocity, float radius, float density, float elasticity, float friction, Pixel color) :
 		position(position), velocity(velocity), angle(angle), angularVelocity(angularVelocity), radius(radius), density(density), elasticity(elasticity), friction(friction), color(color),
 		inverseMass(1 / (density * PI * radius * radius)), inverseInertia(2.0f * inverseMass / (radius * radius)), normal(cos(angle), sin(angle)),
 		forces(0), torques(0), displacements(0),
-		acceleration(0, 0), angularAcceleration(0), savedPosition(position), savedVelocity(velocity), savedAngle(angle), savedAngularVelocity(angularVelocity),
-		contacts(0) {};
+		acceleration(0, 0), angularAcceleration(0)/*, savedPosition(position), savedVelocity(velocity), savedAngle(angle), savedAngularVelocity(angularVelocity),
+		contacts(0)*/ {};
 
 	void SetPosition(vf2d position) { this->position = position; }
 	void SetVelocity(vf2d velocity) { this->velocity = velocity; }
@@ -57,8 +57,8 @@ public:
 	void AddDisplacement(vf2d displacement) { displacements.push_back(displacement); }
 	void AddAcceleration(vf2d acceleration) { this->acceleration += acceleration; }
 	void AddAngularAcceleration(float angularAcceleration) { this->angularAcceleration += angularAcceleration; }
-	void SaveState() { savedPosition = position; savedVelocity = velocity; savedAngle = angle; savedAngularVelocity = angularVelocity; }
-	void RestoreState() { position = savedPosition; velocity = savedVelocity; angle = savedAngle; angularVelocity = savedAngularVelocity; }
+	/*void SaveState() { savedPosition = position; savedVelocity = velocity; savedAngle = angle; savedAngularVelocity = angularVelocity; }
+	void RestoreState() { position = savedPosition; velocity = savedVelocity; angle = savedAngle; angularVelocity = savedAngularVelocity; }*/
 
 	void UpdateOverlaps();
 	void Update(float dt);

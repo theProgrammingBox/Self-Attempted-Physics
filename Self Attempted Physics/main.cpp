@@ -83,7 +83,7 @@ private:
 		//elapsedTime = (GetWindowSize().y / 2.0f - GetMousePos().y) * 0.00001;
 	}
 
-	void SaveState()
+	/*void SaveState()
 	{
 		for (Ball& ball : balls)
 		{
@@ -97,7 +97,7 @@ private:
 		{
 			ball.RestoreState();
 		}
-	}
+	}*/
 
 	void CollideBalls(Ball& ball1, Ball& ball2)
 	{
@@ -112,20 +112,17 @@ private:
 		ball2.AddForce(totalForce);
 	}
 
-	void ResolveContacts(float dt)
+	void StimulateTimestep(float dt)
 	{
-		//bool contact = false;
 		float remainingDt = dt;
 		while (remainingDt != 0.0f)
 		{
 			Update(remainingDt);
 			float dtGlobalOffset = 0.0f;
-			//contact = false;
 			Ball* ball1 = nullptr;
 			Ball* ball2 = nullptr;
 			for (int i = 0; i < balls.size(); i++)
 			{
-				//balls[i].contacts.clear();
 				for (int j = i + 1; j < balls.size(); j++)
 				{
 					vf2d dPos = balls[i].position - balls[j].position;
@@ -144,7 +141,6 @@ private:
 								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
 								if (dtOffset <= -remainingDt)
 								{
-									//contact = true;
 									CollideBalls(balls[i], balls[j]);
 								}
 								else if (dtOffset < dtGlobalOffset)
@@ -153,14 +149,6 @@ private:
 									ball1 = &balls[i];
 									ball2 = &balls[j];
 								}
-								/*if (!contact)
-								{
-								}
-								else
-								{
-									CollideBalls(balls[i], balls[j]);
-								}*/
-								//balls[i].contacts.push_back(&balls[j]);
 							}
 						}
 					}
@@ -170,7 +158,6 @@ private:
 			Update(dtGlobalOffset);
 			if (ball1 != nullptr)
 			{
-				//cout << "dtGlobalOffset: " << dtGlobalOffset << endl;
 				CollideBalls(*ball1, *ball2);
 			}
 		}
@@ -181,103 +168,6 @@ private:
 		Ball* ball1;
 		Ball* ball2;
 	};
-
-	//void StimulateTimestep(float dt)
-	//{
-	//	collisionPair collision;
-	//	//vector<collisionPair> collisions;
-	//	float remainingDt = dt;
-	//	while (remainingDt != 0.0f)
-	//	{
-	//		if (!ResolveContacts())
-	//		{
-	//			//bool maxed = false;
-	//			Update(remainingDt);
-	//			float dtGlobalOffset = 0.0f;
-	//			collision.ball1 = nullptr;
-	//			collision.ball2 = nullptr;
-	//			for (int i = 0; i < balls.size(); i++)
-	//			{
-	//				for (int j = i + 1; j < balls.size(); j++)
-	//				{
-	//					vf2d dPos = balls[i].position - balls[j].position;
-	//					float distanceSquared = dPos.mag2();
-	//					float totalRadius = balls[i].radius + balls[j].radius;
-	//					float iffyOverlap = distanceSquared - totalRadius * totalRadius;
-	//					if (iffyOverlap < 0)
-	//					{
-	//						vf2d dVel = balls[i].velocity - balls[j].velocity;
-	//						float a = dVel.mag2();
-	//						if (a != 0)
-	//						{
-	//							float b = dPos.dot(dVel);
-	//							if (b < 0)
-	//							{
-	//								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
-	//								if (dtOffset < dtGlobalOffset)
-	//								{
-	//									collision.ball1 = &balls[i];
-	//									collision.ball2 = &balls[j];
-	//									if (!maxed)
-	//									{
-	//										//if (dtOffset < -remainingDt)
-	//										if (dtOffset < -dt)
-	//										{
-	//											maxed = true;
-	//											//dtGlobalOffset = -remainingDt;
-	//											dtGlobalOffset = -dt;
-	//											collisions.push_back(collision);
-	//										}
-	//										else
-	//										{
-	//											dtGlobalOffset = dtOffset;
-	//										}
-	//									}
-	//									else
-	//									{
-	//										collisions.push_back(collision);
-	//									}
-	//								}
-	//							}
-	//						}
-	//					}
-	//				}
-	//			}
-	//		}
-	//		Update(dtGlobalOffset);
-	//		remainingDt = -dtGlobalOffset;
-	//		if (collision.ball1 != nullptr)
-	//		{
-	//			if (!maxed)
-	//			{
-	//				vf2d dPos = collision.ball1->position - collision.ball2->position;
-	//				vf2d collisionNormal = dPos.norm();
-	//				vf2d dVel = collision.ball1->velocity - collision.ball2->velocity;
-	//				float normalVelocity = collisionNormal.dot(dVel);
-	//				float elasticity = (collision.ball1->elasticity + collision.ball2->elasticity) * 0.5f + 1.0f;
-	//				float collisionImpulse = normalVelocity / (collision.ball1->inverseMass + collision.ball2->inverseMass);
-	//				vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
-	//				collision.ball1->AddForce(-totalForce);
-	//				collision.ball2->AddForce(totalForce);
-	//			}
-	//			else
-	//			{
-	//				for (collisionPair& c : collisions)
-	//				{
-	//					vf2d dPos = c.ball1->position - c.ball2->position;
-	//					vf2d collisionNormal = dPos.norm();
-	//					vf2d dVel = c.ball1->velocity - c.ball2->velocity;
-	//					float normalVelocity = collisionNormal.dot(dVel);
-	//					float elasticity = (c.ball1->elasticity + c.ball2->elasticity) * 0.5f + 1.0f;
-	//					float collisionImpulse = normalVelocity / (c.ball1->inverseMass + c.ball2->inverseMass);
-	//					vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
-	//					c.ball1->AddForce(-totalForce);
-	//					c.ball2->AddForce(totalForce);
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
 
 	void Render()
 	{
@@ -306,7 +196,7 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			//ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
 			ball.AddAngularAcceleration(0);
 			ball.Update(dt);
 		}
@@ -320,15 +210,15 @@ public:
 
 	bool OnUserCreate() override
 	{
-		elapsedTime = 0.002;
+		elapsedTime = 0.001;
 		balls.clear();
-		/*balls.push_back(
+		balls.push_back(
 			Ball(vf2d(100, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
 		balls.push_back(
 			Ball(vf2d(150, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.8f, 0.0f, WHITE));
 		balls.push_back(
 			Ball(vf2d(200, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
-		*/
+		/**/
 
 		return true;
 	}
@@ -337,8 +227,7 @@ public:
 	{
 		Render();
 		Controls(elapsedTime);
-		//StimulateTimestep(elapsedTime);
-		ResolveContacts(elapsedTime);
+		StimulateTimestep(elapsedTime);
 
 		return true;
 	}
