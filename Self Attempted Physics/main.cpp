@@ -7,7 +7,7 @@ private:
 	Random random;
 	vector<Ball> balls;
 	Ball* selectedBall = nullptr;
-	float elapsedTime;
+	bool paused;
 
 	Pixel mapToRainbow(float d) { // 0 - 1
 		d *= 6.0;
@@ -22,13 +22,12 @@ private:
 	{
 		Clear(olc::BLACK);
 		DrawString(10, 10, "Ball Count: " + std::to_string(balls.size()), olc::WHITE);
-		DrawString(10, 30, "elapsedTime: " + std::to_string(elapsedTime), olc::WHITE);
 
 		for (Ball& ball : balls)
 		{
 			DrawCircle(ball.position, ball.radius, ball.color);
 			DrawLine(ball.position, ball.position + ball.velocity, ball.color);
-			//DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
+			DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
 			//DrawLine(GetWindowSize() / 2.0f, ball.position, ball.color);
 		}
 	}
@@ -95,14 +94,18 @@ private:
 			balls.clear();
 			selectedBall = nullptr;
 		}
-		//elapsedTime = (GetWindowSize().y / 2.0f - GetMousePos().y) * 0.00001;
+
+		if (GetKey(olc::Key::SPACE).bPressed)
+		{
+			paused = !paused;
+		}
 	}
 
 	void ApplyAccelerations(float dt)
 	{
 		for (Ball& ball : balls)
 		{
-			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			//ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
 			ball.AddAngularAcceleration(0);
 			ball.ApplyAccelerations(dt);
 		}
@@ -120,23 +123,45 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			/*ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
-			ball.AddAngularAcceleration(0);*/
 			ball.Update(dt);
 		}
 	}
 
 	void CollideBalls(Ball& ball1, Ball& ball2)
 	{
+		float elasticity = (ball1.elasticity + ball2.elasticity) * 0.5f + 1.0f;
+		float friction = ball1.friction * ball2.friction;
 		vf2d dPos = ball1.position - ball2.position;
 		vf2d collisionNormal = dPos.norm();
-		vf2d dVel = ball1.velocity - ball2.velocity;
-		float normalVelocity = collisionNormal.dot(dVel);
-		float elasticity = (ball1.elasticity + ball2.elasticity) * 0.5f + 1.0f;
-		float collisionImpulse = normalVelocity / (ball1.inverseMass + ball2.inverseMass);
-		vf2d totalForce = collisionNormal * collisionImpulse * elasticity;
-		ball1.AddForce(-totalForce);
-		ball2.AddForce(totalForce);
+
+		vf2d pa = ball1.position + collisionNormal * ball1.radius;
+		vf2d pb = ball2.position - collisionNormal * ball2.radius;
+		vf2d ra = pa - ball1.position;
+		vf2d rb = pb - ball2.position;
+		vf2d va = ball1.velocity + ra.perp() * ball1.angularVelocity;
+		vf2d vb = ball2.velocity - rb.perp() * ball2.angularVelocity;
+		vf2d v = va - vb;
+		vf2d vt = v - (v.dot(collisionNormal) * collisionNormal);
+		vf2d nc = collisionNormal;
+		float jc = nc.dot(v) / (
+			(ball1.inverseMass + ball2.inverseMass) +
+			(ra.cross(collisionNormal) * ra.cross(collisionNormal) * ball1.inverseInertia) +
+			(rb.cross(collisionNormal) * rb.cross(collisionNormal) * ball2.inverseInertia));
+		vf2d nf = -vt.norm();
+		float jf = nf.dot(v) / (
+			(ball1.inverseMass + ball2.inverseMass) +
+			(ra.cross(nf) * ra.cross(nf) * ball1.inverseInertia) +
+			(rb.cross(nf) * rb.cross(nf) * ball2.inverseInertia));
+
+		if (fabs(jf) > fabs(jc * friction))
+		{
+			jf = (jf > 0 ? jc : -jc) * friction;
+		}
+		vf2d impulse = nc * (jc * -elasticity) + nf * -jf;
+		ball1.AddForce(impulse);
+		ball2.AddForce(-impulse);
+		ball1.AddTorque(ra.cross(impulse));
+		ball2.AddTorque(-rb.cross(impulse));
 	}
 
 	void StimulateTimestep(float dt)
@@ -201,7 +226,7 @@ public:
 
 	bool OnUserCreate() override
 	{
-		elapsedTime = 0.001;
+		paused = false;
 		/*balls.push_back(
 			Ball(vf2d(100, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
 		balls.push_back(
@@ -216,8 +241,11 @@ public:
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		Render();
-		Controls(elapsedTime);
-		StimulateTimestep(elapsedTime);
+		Controls(fElapsedTime);
+		if (!paused)
+		{
+			StimulateTimestep(fElapsedTime);
+		}
 
 		return true;
 	}
