@@ -70,6 +70,7 @@ private:
 			if (selectedBall != NULL)
 			{
 				DrawLine(selectedBall->position, GetMousePos(), selectedBall->color);
+				DrawLine(selectedBall->position, GetMousePos(), selectedBall->color);
 			}
 		}
 		if (GetMouse(1).bReleased)
@@ -84,7 +85,7 @@ private:
 		{
 			Ball ball;
 			ball.SetPosition(GetMousePos());
-			ball.SetRadius(random.UDoubleRandom() * 10 + 10);
+			ball.SetRadius(random.UDoubleRandom() * 0 + 50);
 			ball.SetElasticity(0);
 			ball.SetFriction(1);
 			ball.SetColor(mapToRainbow(random.UDoubleRandom()));
@@ -100,6 +101,7 @@ private:
 		{
 			for (Ball& ball : balls)
 			{
+				ball.SetAngleVelocity(10);//
 				ball.SetVelocity(vf2d(0, 0));
 			}
 			//paused = !paused;
@@ -110,7 +112,7 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			ball.ApplyAcceleration((GetWindowSize() / 2.0f - ball.position) * 10, dt);
+			//ball.ApplyAcceleration((GetWindowSize() / 2.0f - ball.position) * 10, dt);
 			//ball.ApplyAngularAcceleration(1, dt);
 		}
 	}
@@ -155,11 +157,17 @@ private:
 			frictionImpulse = (frictionImpulse > 0 ? normalImpulse : -normalImpulse) * friction;
 		}
 
-		vf2d impulse = collisionNormal * normalImpulse * elasticity - collisionTangent * frictionImpulse;
+		vf2d impulse = (collisionNormal * normalImpulse - collisionTangent * frictionImpulse) * elasticity;
 		ball1.ApplyForce(-impulse);
 		ball2.ApplyForce(impulse);
 		ball1.ApplyTorque(radiusVector1.cross(-impulse));
 		ball2.ApplyTorque(radiusVector2.cross(impulse));
+		cout << "torque1: " << ball1.angularVelocity << endl;
+		cout << "changing torque1 by: " << radiusVector1.cross(-impulse) << endl;
+		cout << "torque2: " << ball2.angularVelocity << endl;
+		cout << "changing torque2 by: " << radiusVector2.cross(impulse) << "\n\n";
+		/*DrawLine(ball1.position + radiusVector1, ball1.position + radiusVector1 + (collisionTangent * radiusVector1.cross(-impulse) * ball1.inverseInertia) * 1000, WHITE);
+		DrawLine(ball2.position + radiusVector2, ball2.position + radiusVector2 + (collisionTangent * radiusVector2.cross(impulse) * ball2.inverseInertia) * 1000, WHITE);*/
 	}
 
 	void StimulateTimestep(float dt)
