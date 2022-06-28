@@ -136,8 +136,11 @@ private:
 		vf2d collisionNormal = (ball1.position - ball2.position).norm();
 		vf2d collisionTangent = collisionNormal.perp();
 
-		vf2d radiusVector1 = -collisionNormal * ball1.radius;
-		vf2d radiusVector2 = collisionNormal * ball2.radius;
+		vf2d pointOfContact1 = ball1.position - collisionNormal * ball1.radius;
+		vf2d pointOfContact2 = ball2.position + collisionNormal * ball2.radius;
+
+		vf2d radiusVector1 = pointOfContact1 - ball1.position;
+		vf2d radiusVector2 = pointOfContact2 - ball2.position;
 
 		vf2d vel1 = ball1.velocity + radiusVector1.perp() * ball1.angularVelocity;
 		vf2d vel2 = ball2.velocity + radiusVector2.perp() * ball2.angularVelocity;
