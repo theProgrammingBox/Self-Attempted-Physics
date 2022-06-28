@@ -84,8 +84,9 @@ private:
 		{
 			Ball ball;
 			ball.SetPosition(GetMousePos());
-			ball.SetRadius(random.UDoubleRandom() * 8 + 10);
-			ball.SetElasticity(random.UDoubleRandom());
+			ball.SetRadius(random.UDoubleRandom() * 10 + 10);
+			ball.SetElasticity(0);
+			ball.SetFriction(1);
 			ball.SetColor(mapToRainbow(random.UDoubleRandom()));
 			balls.push_back(ball);
 		}
@@ -105,7 +106,7 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			//ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			ball.AddAcceleration((GetWindowSize() / 2.0f - ball.position) * 10);
 			ball.AddAngularAcceleration(0);
 			ball.ApplyAccelerations(dt);
 		}
@@ -132,18 +133,22 @@ private:
 		float elasticity = (ball1.elasticity + ball2.elasticity) * 0.5f + 1.0f;
 		float friction = ball1.friction * ball2.friction;
 		vf2d dPos = ball1.position - ball2.position;
+		/*float distance = dPos.mag();
+		float ratio1 = ball1.radius / (ball1.radius + ball2.radius);
+		float ratio2 = ball2.radius / (ball1.radius + ball2.radius);*/
 		vf2d collisionNormal = dPos.norm();
 
-		vf2d pa = ball1.position + collisionNormal * ball1.radius;
-		vf2d pb = ball2.position - collisionNormal * ball2.radius;
+		vf2d pa = ball1.position - collisionNormal * ball1.radius;
+		vf2d pb = ball2.position + collisionNormal * ball2.radius;
+		/*vf2d pa = ball1.position - collisionNormal * ratio1 * distance;
+		vf2d pb = ball2.position + collisionNormal * ratio2 * distance;*/
 		vf2d ra = pa - ball1.position;
 		vf2d rb = pb - ball2.position;
 		vf2d va = ball1.velocity + ra.perp() * ball1.angularVelocity;
 		vf2d vb = ball2.velocity + rb.perp() * ball2.angularVelocity;
 		vf2d v = va - vb;
 		vf2d vt = v - v.dot(collisionNormal) * collisionNormal;
-		vf2d nc = collisionNormal;
-		float jc = nc.dot(v) / (
+		float jc = collisionNormal.dot(v) / (
 			(ball1.inverseMass + ball2.inverseMass) +
 			(ra.cross(collisionNormal) * ra.cross(collisionNormal) * ball1.inverseInertia) +
 			(rb.cross(collisionNormal) * rb.cross(collisionNormal) * ball2.inverseInertia));
@@ -152,12 +157,11 @@ private:
 			(ball1.inverseMass + ball2.inverseMass) +
 			(ra.cross(nf) * ra.cross(nf) * ball1.inverseInertia) +
 			(rb.cross(nf) * rb.cross(nf) * ball2.inverseInertia));
-
 		if (fabs(jf) > fabs(jc * friction))
 		{
 			jf = (jf > 0 ? jc : -jc) * friction;
 		}
-		vf2d impulse = nc * (jc * -elasticity) + nf * -jf;
+		vf2d impulse = collisionNormal * (jc * -elasticity) + nf * jf;
 		ball1.AddForce(impulse);
 		ball2.AddForce(-impulse);
 		ball1.AddTorque(ra.cross(impulse));
@@ -241,10 +245,10 @@ public:
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		Render();
-		Controls(fElapsedTime);
+		Controls(0.001);
 		if (!paused)
 		{
-			StimulateTimestep(fElapsedTime);
+			StimulateTimestep(0.001);
 		}
 
 		return true;
