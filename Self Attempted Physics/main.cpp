@@ -120,8 +120,8 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
-			ball.AddAngularAcceleration(0);
+			/*ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			ball.AddAngularAcceleration(0);*/
 			ball.Update(dt);
 		}
 	}
@@ -144,7 +144,9 @@ private:
 		float remainingDt = dt;
 		while (remainingDt != 0.0f)
 		{
+			ApplyForces();
 			Update(remainingDt);
+			ApplyAccelerations(remainingDt);
 			float dtGlobalOffset = 0.0f;
 			Ball* ball1 = nullptr;
 			Ball* ball2 = nullptr;
@@ -183,6 +185,7 @@ private:
 			}
 			remainingDt = -dtGlobalOffset;
 			Update(dtGlobalOffset);
+			ApplyAccelerations(dtGlobalOffset);
 			if (ball1 != nullptr)
 			{
 				CollideBalls(*ball1, *ball2);

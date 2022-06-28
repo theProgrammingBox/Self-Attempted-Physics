@@ -38,11 +38,11 @@ void Ball::ApplyAccelerations(float dt)
 
 void Ball::Update(float dt)
 {
-	/*position += velocity * dt;
+	position += velocity * dt;
 	angle += angularVelocity * dt;
-	normal = vf2d(cos(angle), sin(angle));*/
+	normal = vf2d(cos(angle), sin(angle));/**/
 
-	vf2d avgForces = vf2d(0, 0);
+	/*vf2d avgForces = vf2d(0, 0);
 	if (forces.size() != 0)
 	{
 		vf2d sumForces = vf2d(0, 0);
@@ -76,5 +76,5 @@ void Ball::Update(float dt)
 
 	normal = vf2d(cos(angle), sin(angle));
 	acceleration = vf2d(0, 0);
-	angularAcceleration = 0;
+	angularAcceleration = 0;*/
 }
