@@ -18,8 +18,12 @@ public:
 	float inverseMass;
 	float inverseInertia;
 	vf2d normal;
+	/*vf2d totalForce;
+	int numForces;
+	float torque;
+	int numTorques;*/
 	vector<vf2d> forces;
-	vector<float> torques;
+	vector<float> torques;/**/
 	vf2d acceleration;
 	float angularAcceleration;
 

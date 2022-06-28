@@ -133,39 +133,33 @@ private:
 		float elasticity = (ball1.elasticity + ball2.elasticity) * 0.5f + 1.0f;
 		float friction = ball1.friction * ball2.friction;
 		vf2d dPos = ball1.position - ball2.position;
-		/*float distance = dPos.mag();
-		float ratio1 = ball1.radius / (ball1.radius + ball2.radius);
-		float ratio2 = ball2.radius / (ball1.radius + ball2.radius);*/
 		vf2d collisionNormal = dPos.norm();
+		vf2d collisionTangent = collisionNormal.perp();
 
 		vf2d pa = ball1.position - collisionNormal * ball1.radius;
 		vf2d pb = ball2.position + collisionNormal * ball2.radius;
-		/*vf2d pa = ball1.position - collisionNormal * ratio1 * distance;
-		vf2d pb = ball2.position + collisionNormal * ratio2 * distance;*/
 		vf2d ra = pa - ball1.position;
 		vf2d rb = pb - ball2.position;
 		vf2d va = ball1.velocity + ra.perp() * ball1.angularVelocity;
 		vf2d vb = ball2.velocity + rb.perp() * ball2.angularVelocity;
 		vf2d v = va - vb;
-		vf2d vt = v - v.dot(collisionNormal) * collisionNormal;
 		float jc = collisionNormal.dot(v) / (
 			(ball1.inverseMass + ball2.inverseMass) +
 			(ra.cross(collisionNormal) * ra.cross(collisionNormal) * ball1.inverseInertia) +
 			(rb.cross(collisionNormal) * rb.cross(collisionNormal) * ball2.inverseInertia));
-		vf2d nf = -vt.norm();
-		float jf = nf.dot(v) / (
+		float jf = collisionTangent.dot(v) / (
 			(ball1.inverseMass + ball2.inverseMass) +
-			(ra.cross(nf) * ra.cross(nf) * ball1.inverseInertia) +
-			(rb.cross(nf) * rb.cross(nf) * ball2.inverseInertia));
+			(ra.cross(collisionTangent) * ra.cross(collisionTangent) * ball1.inverseInertia) +
+			(rb.cross(collisionTangent) * rb.cross(collisionTangent) * ball2.inverseInertia));
 		if (fabs(jf) > fabs(jc * friction))
 		{
 			jf = (jf > 0 ? jc : -jc) * friction;
 		}
-		vf2d impulse = collisionNormal * (jc * -elasticity) + nf * jf;
-		ball1.AddForce(impulse);
-		ball2.AddForce(-impulse);
-		ball1.AddTorque(ra.cross(impulse));
-		ball2.AddTorque(-rb.cross(impulse));
+		vf2d impulse = collisionNormal * jc * elasticity - collisionTangent * jf;
+		ball1.AddForce(-impulse);
+		ball2.AddForce(impulse);
+		ball1.AddTorque(-ra.cross(impulse));
+		ball2.AddTorque(rb.cross(impulse));
 	}
 
 	void StimulateTimestep(float dt)
@@ -198,7 +192,7 @@ private:
 								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
 								if (dtOffset <= -remainingDt)
 								{
-									CollideBalls(balls[i], balls[j]);
+									//CollideBalls(balls[i], balls[j]);
 								}
 								else if (dtOffset < dtGlobalOffset)
 								{
@@ -211,12 +205,12 @@ private:
 					}
 				}
 			}
+			Update(dtGlobalOffset);
+			ApplyAccelerations(dtGlobalOffset);
 			if (ball1 != nullptr)
 			{
 				CollideBalls(*ball1, *ball2);
 			}
-			Update(dtGlobalOffset);
-			ApplyAccelerations(dtGlobalOffset);
 			ApplyForces();
 			remainingDt = -dtGlobalOffset;
 		}
