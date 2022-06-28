@@ -18,6 +18,21 @@ private:
 		return Pixel(r * 0xff, g * 0xff, b * 0xff);
 	}
 
+	void Render()
+	{
+		Clear(olc::BLACK);
+		DrawString(10, 10, "Ball Count: " + std::to_string(balls.size()), olc::WHITE);
+		DrawString(10, 30, "elapsedTime: " + std::to_string(elapsedTime), olc::WHITE);
+
+		for (Ball& ball : balls)
+		{
+			DrawCircle(ball.position, ball.radius, ball.color);
+			DrawLine(ball.position, ball.position + ball.velocity, ball.color);
+			//DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
+			//DrawLine(GetWindowSize() / 2.0f, ball.position, ball.color);
+		}
+	}
+
 	void Controls(float dt)
 	{
 		if (GetMouse(0).bPressed || GetMouse(1).bPressed && balls.size() != 0)
@@ -83,6 +98,34 @@ private:
 		//elapsedTime = (GetWindowSize().y / 2.0f - GetMousePos().y) * 0.00001;
 	}
 
+	void ApplyAccelerations(float dt)
+	{
+		for (Ball& ball : balls)
+		{
+			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			ball.AddAngularAcceleration(0);
+			ball.ApplyAccelerations(dt);
+		}
+	}
+
+	void ApplyForces()
+	{
+		for (Ball& ball : balls)
+		{
+			ball.ApplyForces();
+		}
+	}
+
+	void Update(float dt)
+	{
+		for (Ball& ball : balls)
+		{
+			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			ball.AddAngularAcceleration(0);
+			ball.Update(dt);
+		}
+	}
+
 	void CollideBalls(Ball& ball1, Ball& ball2)
 	{
 		vf2d dPos = ball1.position - ball2.position;
@@ -144,31 +187,6 @@ private:
 			{
 				CollideBalls(*ball1, *ball2);
 			}
-		}
-	}
-
-	void Render()
-	{
-		Clear(olc::BLACK);
-		DrawString(10, 10, "Ball Count: " + std::to_string(balls.size()), olc::WHITE);
-		DrawString(10, 30, "elapsedTime: " + std::to_string(elapsedTime), olc::WHITE);
-
-		for (Ball& ball : balls)
-		{
-			DrawCircle(ball.position, ball.radius, ball.color);
-			DrawLine(ball.position, ball.position + ball.velocity, ball.color);
-			//DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
-			//DrawLine(GetWindowSize() / 2.0f, ball.position, ball.color);
-		}
-	}
-
-	void Update(float dt)
-	{
-		for (Ball& ball : balls)
-		{
-			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
-			ball.AddAngularAcceleration(0);
-			ball.Update(dt);
 		}
 	}
 

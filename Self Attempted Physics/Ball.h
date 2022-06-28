@@ -48,5 +48,8 @@ public:
 	void AddAcceleration(vf2d acceleration) { this->acceleration += acceleration; }
 	void AddAngularAcceleration(float angularAcceleration) { this->angularAcceleration += angularAcceleration; }
 
+	void ApplyForces();
+	void ApplyAccelerations(float dt);
+
 	void Update(float dt);
 };
