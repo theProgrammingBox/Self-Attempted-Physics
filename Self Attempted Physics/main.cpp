@@ -83,22 +83,6 @@ private:
 		//elapsedTime = (GetWindowSize().y / 2.0f - GetMousePos().y) * 0.00001;
 	}
 
-	/*void SaveState()
-	{
-		for (Ball& ball : balls)
-		{
-			ball.SaveState();
-		}
-	}
-
-	void RestoreState()
-	{
-		for (Ball& ball : balls)
-		{
-			ball.RestoreState();
-		}
-	}*/
-
 	void CollideBalls(Ball& ball1, Ball& ball2)
 	{
 		vf2d dPos = ball1.position - ball2.position;
@@ -163,12 +147,6 @@ private:
 		}
 	}
 
-	struct collisionPair
-	{
-		Ball* ball1;
-		Ball* ball2;
-	};
-
 	void Render()
 	{
 		Clear(olc::BLACK);
@@ -184,19 +162,11 @@ private:
 		}
 	}
 
-	void UpdateOverlaps()
-	{
-		for (Ball& ball : balls)
-		{
-			ball.UpdateOverlaps();
-		}
-	}
-
 	void Update(float dt)
 	{
 		for (Ball& ball : balls)
 		{
-			//ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
+			ball.AddAcceleration(GetWindowSize() / 2.0f - ball.position);
 			ball.AddAngularAcceleration(0);
 			ball.Update(dt);
 		}
@@ -211,14 +181,13 @@ public:
 	bool OnUserCreate() override
 	{
 		elapsedTime = 0.001;
-		balls.clear();
-		balls.push_back(
+		/*balls.push_back(
 			Ball(vf2d(100, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
 		balls.push_back(
 			Ball(vf2d(150, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.7f, 0.0f, WHITE));
 		balls.push_back(
-			Ball(vf2d(200, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
-		/**/
+			Ball(vf2d(200, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));*/
+
 
 		return true;
 	}
