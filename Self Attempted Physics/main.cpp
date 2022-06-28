@@ -144,7 +144,6 @@ private:
 		float remainingDt = dt;
 		while (remainingDt != 0.0f)
 		{
-			ApplyForces();
 			Update(remainingDt);
 			ApplyAccelerations(remainingDt);
 			float dtGlobalOffset = 0.0f;
@@ -183,13 +182,14 @@ private:
 					}
 				}
 			}
-			remainingDt = -dtGlobalOffset;
-			Update(dtGlobalOffset);
-			ApplyAccelerations(dtGlobalOffset);
 			if (ball1 != nullptr)
 			{
 				CollideBalls(*ball1, *ball2);
 			}
+			Update(dtGlobalOffset);
+			ApplyAccelerations(dtGlobalOffset);
+			ApplyForces();
+			remainingDt = -dtGlobalOffset;
 		}
 	}
 
