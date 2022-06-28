@@ -98,7 +98,11 @@ private:
 
 		if (GetKey(olc::Key::SPACE).bPressed)
 		{
-			paused = !paused;
+			for (Ball& ball : balls)
+			{
+				ball.SetVelocity(vf2d(0, 0));
+			}
+			//paused = !paused;
 		}
 	}
 
@@ -106,17 +110,8 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			ball.AddAcceleration((GetWindowSize() / 2.0f - ball.position) * 10);
-			ball.AddAngularAcceleration(0);
-			ball.ApplyAccelerations(dt);
-		}
-	}
-
-	void ApplyForces()
-	{
-		for (Ball& ball : balls)
-		{
-			ball.ApplyForces();
+			ball.ApplyAcceleration((GetWindowSize() / 2.0f - ball.position) * 10, dt);
+			//ball.ApplyAngularAcceleration(1, dt);
 		}
 	}
 
@@ -161,10 +156,10 @@ private:
 		}
 
 		vf2d impulse = collisionNormal * normalImpulse * elasticity - collisionTangent * frictionImpulse;
-		ball1.AddForce(-impulse);
-		ball2.AddForce(impulse);
-		ball1.AddTorque(radiusVector1.cross(-impulse));
-		ball2.AddTorque(radiusVector2.cross(impulse));
+		ball1.ApplyForce(-impulse);
+		ball2.ApplyForce(impulse);
+		ball1.ApplyTorque(radiusVector1.cross(-impulse));
+		ball2.ApplyTorque(radiusVector2.cross(impulse));
 	}
 
 	void StimulateTimestep(float dt)
@@ -195,11 +190,7 @@ private:
 							if (b < 0)
 							{
 								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
-								if (dtOffset <= -remainingDt)
-								{
-									//CollideBalls(balls[i], balls[j]);
-								}
-								else if (dtOffset < dtGlobalOffset)
+								if (dtOffset > -remainingDt && dtOffset < dtGlobalOffset)
 								{
 									dtGlobalOffset = dtOffset;
 									ball1 = &balls[i];
@@ -216,7 +207,6 @@ private:
 			{
 				CollideBalls(*ball1, *ball2);
 			}
-			ApplyForces();
 			remainingDt = -dtGlobalOffset;
 		}
 	}
