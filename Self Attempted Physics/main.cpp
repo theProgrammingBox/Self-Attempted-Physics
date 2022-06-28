@@ -139,9 +139,9 @@ private:
 		vf2d ra = pa - ball1.position;
 		vf2d rb = pb - ball2.position;
 		vf2d va = ball1.velocity + ra.perp() * ball1.angularVelocity;
-		vf2d vb = ball2.velocity - rb.perp() * ball2.angularVelocity;
+		vf2d vb = ball2.velocity + rb.perp() * ball2.angularVelocity;
 		vf2d v = va - vb;
-		vf2d vt = v - (v.dot(collisionNormal) * collisionNormal);
+		vf2d vt = v - v.dot(collisionNormal) * collisionNormal;
 		vf2d nc = collisionNormal;
 		float jc = nc.dot(v) / (
 			(ball1.inverseMass + ball2.inverseMass) +
