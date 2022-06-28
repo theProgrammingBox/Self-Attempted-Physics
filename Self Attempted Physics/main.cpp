@@ -132,34 +132,36 @@ private:
 	{
 		float elasticity = (ball1.elasticity + ball2.elasticity) * 0.5f + 1.0f;
 		float friction = ball1.friction * ball2.friction;
-		vf2d dPos = ball1.position - ball2.position;
-		vf2d collisionNormal = dPos.norm();
+
+		vf2d collisionNormal = (ball1.position - ball2.position).norm();
 		vf2d collisionTangent = collisionNormal.perp();
 
-		vf2d pa = ball1.position - collisionNormal * ball1.radius;
-		vf2d pb = ball2.position + collisionNormal * ball2.radius;
-		vf2d ra = pa - ball1.position;
-		vf2d rb = pb - ball2.position;
-		vf2d va = ball1.velocity + ra.perp() * ball1.angularVelocity;
-		vf2d vb = ball2.velocity + rb.perp() * ball2.angularVelocity;
-		vf2d v = va - vb;
-		float jc = collisionNormal.dot(v) / (
+		vf2d radiusVector1 = -collisionNormal * ball1.radius;
+		vf2d radiusVector2 = collisionNormal * ball2.radius;
+
+		vf2d vel1 = ball1.velocity + radiusVector1.perp() * ball1.angularVelocity;
+		vf2d vel2 = ball2.velocity + radiusVector2.perp() * ball2.angularVelocity;
+		vf2d relativeVel = vel1 - vel2;
+
+		float normalImpulse = collisionNormal.dot(relativeVel) / (
 			(ball1.inverseMass + ball2.inverseMass) +
-			(ra.cross(collisionNormal) * ra.cross(collisionNormal) * ball1.inverseInertia) +
-			(rb.cross(collisionNormal) * rb.cross(collisionNormal) * ball2.inverseInertia));
-		float jf = collisionTangent.dot(v) / (
+			(radiusVector1.cross(collisionNormal) * radiusVector1.cross(collisionNormal) * ball1.inverseInertia) +
+			(radiusVector2.cross(collisionNormal) * radiusVector2.cross(collisionNormal) * ball2.inverseInertia));
+		float frictionImpulse = collisionTangent.dot(relativeVel) / (
 			(ball1.inverseMass + ball2.inverseMass) +
-			(ra.cross(collisionTangent) * ra.cross(collisionTangent) * ball1.inverseInertia) +
-			(rb.cross(collisionTangent) * rb.cross(collisionTangent) * ball2.inverseInertia));
-		if (fabs(jf) > fabs(jc * friction))
+			(radiusVector1.cross(collisionTangent) * radiusVector1.cross(collisionTangent) * ball1.inverseInertia) +
+			(radiusVector2.cross(collisionTangent) * radiusVector2.cross(collisionTangent) * ball2.inverseInertia));
+
+		if (fabs(frictionImpulse) > fabs(normalImpulse * friction))
 		{
-			jf = (jf > 0 ? jc : -jc) * friction;
+			frictionImpulse = (frictionImpulse > 0 ? normalImpulse : -normalImpulse) * friction;
 		}
-		vf2d impulse = collisionNormal * jc * elasticity - collisionTangent * jf;
+
+		vf2d impulse = collisionNormal * normalImpulse * elasticity - collisionTangent * frictionImpulse;
 		ball1.AddForce(-impulse);
 		ball2.AddForce(impulse);
-		ball1.AddTorque(-ra.cross(impulse));
-		ball2.AddTorque(rb.cross(impulse));
+		ball1.AddTorque(radiusVector1.cross(-impulse));
+		ball2.AddTorque(radiusVector2.cross(impulse));
 	}
 
 	void StimulateTimestep(float dt)
