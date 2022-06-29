@@ -9,6 +9,12 @@ private:
 	Ball* selectedBall = nullptr;
 	bool paused;
 
+	struct collision
+	{
+		Ball& ball1;
+		Ball& ball2;
+	};
+
 	Pixel mapToRainbow(float d) { // 0 - 1
 		d *= 6.0;
 		const float r = (d > 4.0f) ? max(0.0f, min(1.0f, 6.0f - d)) : max(0.0f, min(1.0f, d - 2.0f));
@@ -26,8 +32,8 @@ private:
 		for (Ball& ball : balls)
 		{
 			DrawCircle(ball.position, ball.radius, ball.color);
-			DrawLine(ball.position, ball.position + ball.velocity, ball.color);
 			DrawLine(ball.position, ball.position + ball.normal * ball.radius, ball.color);
+			//DrawLine(ball.position, ball.position + ball.velocity, ball.color);
 			//DrawLine(GetWindowSize() / 2.0f, ball.position, ball.color);
 		}
 	}
@@ -85,7 +91,7 @@ private:
 		{
 			Ball ball;
 			ball.SetPosition(GetMousePos());
-			ball.SetRadius(random.UDoubleRandom() * 10 + 10);
+			ball.SetRadius(random.UDoubleRandom() * 6 + 4);
 			ball.SetElasticity(0);
 			ball.SetFriction(1);
 			ball.SetColor(mapToRainbow(random.UDoubleRandom()));
@@ -96,14 +102,8 @@ private:
 			balls.clear();
 			selectedBall = nullptr;
 		}
-
 		if (GetKey(olc::Key::SPACE).bPressed)
 		{
-			//for (Ball& ball : balls)
-			//{
-			//	ball.SetAngleVelocity(10);//
-			//	ball.SetVelocity(vf2d(0, 0));
-			//}
 			paused = !paused;
 		}
 	}
@@ -113,7 +113,7 @@ private:
 		for (Ball& ball : balls)
 		{
 			ball.ApplyAcceleration((GetWindowSize() / 2.0f - ball.position) * 10, dt);
-			//ball.ApplyAngularAcceleration(1, dt);
+			//ball.ApplyAngularAcceleration(0, dt);
 		}
 	}
 
@@ -143,14 +143,19 @@ private:
 		vf2d vel2 = ball2.velocity + radiusVector2.perp() * ball2.angularVelocity;
 		vf2d relativeVel = vel1 - vel2;
 
+		float normalCrossProduct1 = collisionNormal.cross(radiusVector1);
+		float normalCrossProduct2 = collisionNormal.cross(radiusVector2);
 		float normalImpulse = collisionNormal.dot(relativeVel) / (
 			(ball1.inverseMass + ball2.inverseMass) +
-			(radiusVector1.cross(collisionNormal) * radiusVector1.cross(collisionNormal) * ball1.inverseInertia) +
-			(radiusVector2.cross(collisionNormal) * radiusVector2.cross(collisionNormal) * ball2.inverseInertia));
+			(normalCrossProduct1 * normalCrossProduct1 * ball1.inverseInertia) +
+			(normalCrossProduct2 * normalCrossProduct2 * ball2.inverseInertia));
+
+		float frictionCrossProduct1 = collisionTangent.cross(radiusVector1);
+		float frictionCrossProduct2 = collisionTangent.cross(radiusVector2);
 		float frictionImpulse = collisionTangent.dot(relativeVel) / (
 			(ball1.inverseMass + ball2.inverseMass) +
-			(radiusVector1.cross(collisionTangent) * radiusVector1.cross(collisionTangent) * ball1.inverseInertia) +
-			(radiusVector2.cross(collisionTangent) * radiusVector2.cross(collisionTangent) * ball2.inverseInertia));
+			(frictionCrossProduct1 * frictionCrossProduct1 * ball1.inverseInertia) +
+			(frictionCrossProduct2 * frictionCrossProduct2 * ball2.inverseInertia));
 
 		if (fabs(frictionImpulse) > fabs(normalImpulse * friction))
 		{
@@ -174,6 +179,7 @@ private:
 			float dtGlobalOffset = 0.0f;
 			Ball* ball1 = nullptr;
 			Ball* ball2 = nullptr;
+			vector<collision> collisions;
 			for (int i = 0; i < balls.size(); i++)
 			{
 				for (int j = i + 1; j < balls.size(); j++)
@@ -192,11 +198,18 @@ private:
 							if (b < 0)
 							{
 								float dtOffset = (-sqrt(b * b - a * iffyOverlap) - b) / a;
-								if (dtOffset > -remainingDt && dtOffset < dtGlobalOffset)
+								if (dtOffset > -remainingDt)
 								{
-									dtGlobalOffset = dtOffset;
-									ball1 = &balls[i];
-									ball2 = &balls[j];
+									if (dtOffset < dtGlobalOffset)
+									{
+										dtGlobalOffset = dtOffset;
+										ball1 = &balls[i];
+										ball2 = &balls[j];
+									}
+								}
+								else
+								{
+									collisions.push_back(collision{ balls[i], balls[j] });
 								}
 							}
 						}
@@ -209,23 +222,9 @@ private:
 			{
 				CollideBalls(*ball1, *ball2);
 			}
-			for (int i = 0; i < balls.size(); i++)
+			for (collision& c : collisions)
 			{
-				for (int j = i + 1; j < balls.size(); j++)
-				{
-					vf2d dPos = balls[i].position - balls[j].position;
-					float distanceSquared = dPos.mag2();
-					float totalRadius = balls[i].radius + balls[j].radius;
-					float iffyOverlap = distanceSquared - totalRadius * totalRadius;
-					if (iffyOverlap < 0)
-					{
-						vf2d dVel = balls[i].velocity - balls[j].velocity;
-						if (dPos.dot(dVel) < 0)
-						{
-							CollideBalls(balls[i], balls[j]);
-						}
-					}
-				}
+				CollideBalls(c.ball1, c.ball2);
 			}
 			remainingDt = -dtGlobalOffset;
 		}
@@ -240,13 +239,6 @@ public:
 	bool OnUserCreate() override
 	{
 		paused = false;
-		/*balls.push_back(
-			Ball(vf2d(100, 500), vf2d(100.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));
-		balls.push_back(
-			Ball(vf2d(150, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1.0f, 0.7f, 0.0f, WHITE));
-		balls.push_back(
-			Ball(vf2d(200, 500), vf2d(0.0f, 0.0f), 0.0f, 0.0f, 10.0f, 1000000.0f, 1.0f, 0.0f, WHITE));*/
-
 
 		return true;
 	}
