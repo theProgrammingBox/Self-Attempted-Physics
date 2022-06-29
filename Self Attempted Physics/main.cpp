@@ -92,8 +92,8 @@ private:
 			Ball ball;
 			ball.SetPosition(GetMousePos());
 			ball.SetRadius(random.UDoubleRandom() * 6 + 4);
-			ball.SetElasticity(0);
-			ball.SetFriction(1);
+			ball.SetElasticity(random.UDoubleRandom());
+			ball.SetFriction(random.UDoubleRandom());
 			ball.SetColor(mapToRainbow(random.UDoubleRandom()));
 			balls.push_back(ball);
 		}
