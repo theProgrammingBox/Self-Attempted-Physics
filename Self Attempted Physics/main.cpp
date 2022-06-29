@@ -112,7 +112,7 @@ private:
 	{
 		for (Ball& ball : balls)
 		{
-			//ball.ApplyAcceleration((GetWindowSize() / 2.0f - ball.position) * 10, dt);
+			ball.ApplyAcceleration((GetWindowSize() / 2.0f - ball.position) * 10, dt);
 			//ball.ApplyAngularAcceleration(1, dt);
 		}
 	}
@@ -160,14 +160,8 @@ private:
 		vf2d impulse = (collisionNormal * normalImpulse - collisionTangent * frictionImpulse) * elasticity;
 		ball1.ApplyForce(-impulse);
 		ball2.ApplyForce(impulse);
-		ball1.ApplyTorque(radiusVector1.cross(-impulse));
-		ball2.ApplyTorque(radiusVector2.cross(impulse));
-		cout << "torque1: " << ball1.angularVelocity << endl;
-		cout << "changing torque1 by: " << radiusVector1.cross(-impulse) << endl;
-		cout << "torque2: " << ball2.angularVelocity << endl;
-		cout << "changing torque2 by: " << radiusVector2.cross(impulse) << "\n\n";
-		/*DrawLine(ball1.position + radiusVector1, ball1.position + radiusVector1 + (collisionTangent * radiusVector1.cross(-impulse) * ball1.inverseInertia) * 1000, WHITE);
-		DrawLine(ball2.position + radiusVector2, ball2.position + radiusVector2 + (collisionTangent * radiusVector2.cross(impulse) * ball2.inverseInertia) * 1000, WHITE);*/
+		ball1.ApplyTorque(radiusVector1.cross(impulse));
+		ball2.ApplyTorque(radiusVector2.cross(-impulse));
 	}
 
 	void StimulateTimestep(float dt)
