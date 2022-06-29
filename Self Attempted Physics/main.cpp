@@ -85,7 +85,7 @@ private:
 		{
 			Ball ball;
 			ball.SetPosition(GetMousePos());
-			ball.SetRadius(random.UDoubleRandom() * 0 + 50);
+			ball.SetRadius(random.UDoubleRandom() * 10 + 10);
 			ball.SetElasticity(0);
 			ball.SetFriction(1);
 			ball.SetColor(mapToRainbow(random.UDoubleRandom()));
@@ -99,12 +99,12 @@ private:
 
 		if (GetKey(olc::Key::SPACE).bPressed)
 		{
-			for (Ball& ball : balls)
-			{
-				ball.SetAngleVelocity(10);//
-				ball.SetVelocity(vf2d(0, 0));
-			}
-			//paused = !paused;
+			//for (Ball& ball : balls)
+			//{
+			//	ball.SetAngleVelocity(10);//
+			//	ball.SetVelocity(vf2d(0, 0));
+			//}
+			paused = !paused;
 		}
 	}
 
@@ -208,6 +208,24 @@ private:
 			if (ball1 != nullptr)
 			{
 				CollideBalls(*ball1, *ball2);
+			}
+			for (int i = 0; i < balls.size(); i++)
+			{
+				for (int j = i + 1; j < balls.size(); j++)
+				{
+					vf2d dPos = balls[i].position - balls[j].position;
+					float distanceSquared = dPos.mag2();
+					float totalRadius = balls[i].radius + balls[j].radius;
+					float iffyOverlap = distanceSquared - totalRadius * totalRadius;
+					if (iffyOverlap < 0)
+					{
+						vf2d dVel = balls[i].velocity - balls[j].velocity;
+						if (dPos.dot(dVel) < 0)
+						{
+							CollideBalls(balls[i], balls[j]);
+						}
+					}
+				}
 			}
 			remainingDt = -dtGlobalOffset;
 		}
